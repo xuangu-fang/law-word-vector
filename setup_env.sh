@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# download miniconda
+# wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+
+# install miniconda
+# bash Miniconda3-latest-Linux-x86_64.sh
+
 # 设置环境名称
 ENV_NAME="law_word_vector"
 
