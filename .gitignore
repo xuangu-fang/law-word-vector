@@ -1,2 +1,28 @@
 /data
 Miniconda3-latest-Linux-x86_64.sh
+# Preprocessed data directories
+/preprocessed_data/
+/processed_data/
+/interim_data/
+/raw_data/
+
+# Log files
+
+/logs/
+
+# Model files and vectors
+/models/
+/vectors/
+/embeddings/
+/word_vectors/
+/finetuned_models/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python

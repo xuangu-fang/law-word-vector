@@ -5,6 +5,7 @@ scikit-learn>=0.24.0
 
 # excel 导入
 xlrd>=2.0.1
+openpyxl>=3.0.10
 
 # 中文处理
 jieba>=0.42.1
