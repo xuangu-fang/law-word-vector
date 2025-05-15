@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-Flexible Word Vector Fine-tuning Script for People's Daily Corpus.
+Sliding Window Word Vector Fine-tuning Script for People's Daily Corpus.
 
 This script:
 1. Loads a pre-trained Chinese word vector model.
@@ -32,25 +32,40 @@ sys.path.append(str(PROJECT_SRC_DIR))
 
 from data.corpus_manager import CorpusManager # type: ignore
 
+# --- 时期定义 (可自定义此列表) ---
+# 每个字典应包含 "name", "start_year", 和 "end_year"
+YEAR_START = 1978
+YEAR_END = 2024
+SLIDING_WINDOW_SIZE = 10
+SLIDING_WINDOW_STEP = 5
+
+uid = f"Year{YEAR_START}-{YEAR_END}_{SLIDING_WINDOW_SIZE}_{SLIDING_WINDOW_STEP}"
+
 # --- 配置信息 ---
 PRETRAINED_VECTORS_PATH = Path.home() / "gensim-data" / "vectors" / "chinese_vectors.kv" # 预训练词向量路径
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent # 项目根目录
-FINETUNED_MODELS_OUTPUT_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_flexible" # 微调后模型输出目录
-DEBUG_VOCAB_OUTPUT_DIR = PROJECT_ROOT / "models" / "debug_vocabs" # 调试用词汇表输出目录
+FINETUNED_MODELS_OUTPUT_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_sliding_window" / uid # 微调后模型输出目录
+DEBUG_VOCAB_OUTPUT_DIR = PROJECT_ROOT / "models" / "debug_vocabs" / uid # 调试用词汇表输出目录
 
-# --- 时期定义 (可自定义此列表) ---
-# 每个字典应包含 "name", "start_year", 和 "end_year"
+
+
 PERIODS_TO_FINETUNE = [
-    {"name": "Era1_1978-1996", "start_year": 1978, "end_year": 1996},
-    {"name": "Era2_1997-2013", "start_year": 1997, "end_year": 2013},
-    {"name": "Era3_2014-2024", "start_year": 2014, "end_year": 2024},
-    # {"name": "Era4_1977-1979", "start_year": 1977, "end_year": 1979},
-    # Example for later periods if data is available:
-    # {"name": "Era5_1980-1989", "start_year": 1980, "end_year": 1989},
-    # {"name": "FullRange_1949-2023", "start_year": 1949, "end_year": 2023} 
+    
 ]
 
+for num, i in enumerate(range(YEAR_START, YEAR_END, SLIDING_WINDOW_STEP)):
+    if i + SLIDING_WINDOW_SIZE <= YEAR_END:
+        end_year = i + SLIDING_WINDOW_SIZE
+        # 如果是最后一个period，调整end_year为YEAR_END
+        if i + SLIDING_WINDOW_SIZE + SLIDING_WINDOW_STEP > YEAR_END:
+            end_year = YEAR_END
+        PERIODS_TO_FINETUNE.append({
+            "name": f"Era{num+1}_{i}-{end_year}",
+            "start_year": i,
+            "end_year": end_year
+        })
+print(PERIODS_TO_FINETUNE)
 # --- 微调策略 ---
 INCREMENTAL_FINETUNING = False # 若为True，时期N的模型将作为时期N+1的基础模型进行增量微调
 FORCE_CREATE_PERIOD_CORPORA = False # 若为True，即使时期语料已存在也将重新创建
@@ -60,7 +75,7 @@ FORCE_CREATE_PERIOD_CORPORA = False # 若为True，即使时期语料已存在�
 WINDOW_SIZE = 10 # 上下文窗口大小
 MIN_COUNT = 5  # 词频阈值：在聚焦微调模式下，这也是聚焦词必须达到的最低频率
 WORKERS = os.cpu_count() - 1 if os.cpu_count() and os.cpu_count() > 1 else 1 # 使用的CPU核心数
-EPOCHS = 10        # 训练轮数
+EPOCHS = 15        # 训练轮数
 SG = 1 # 0 表示 CBOW, 1 表示 Skip-gram
 
 # --- 聚焦微调控制 ---

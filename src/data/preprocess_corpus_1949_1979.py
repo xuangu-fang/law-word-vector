@@ -36,7 +36,7 @@ YEARLY_PROCESSED_DIR = PROJECT_ROOT / "processed_data" / "yearly_corpus"
 STATS_DIR = PROJECT_ROOT / "processed_data" / "stats"
 
 # Define the range of years to process
-START_YEAR_CONFIG = 1949
+START_YEAR_CONFIG = 1996
 END_YEAR_CONFIG = 2024 # Adjust as needed
 
 # --- Logging Setup ---
