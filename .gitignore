@@ -11,7 +11,7 @@ Miniconda3-latest-Linux-x86_64.sh
 /logs/
 
 # Model files and vectors
-/models/
+/models/debug_vocabs/
 /vectors/
 /embeddings/
 /word_vectors/
