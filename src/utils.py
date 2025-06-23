@@ -41,9 +41,29 @@ def download_chinese_font():
     
     return font_path
 
-# 加载所有可用的模型
+#
 def load_models(MODELS_DIR):
     """加载目录中所有的词向量模型"""
+    
+    # 可能的模型目录
+    FINE_TUNED_MODELS_DIR = MODELS_DIR / "fine_tuned_vectors_flexible"
+    SLIDING_WINDOW_MODELS_DIR = MODELS_DIR / "fine_tuned_vectors_sliding_window"
+    
+    # 检查哪个目录存在并包含模型
+    if FINE_TUNED_MODELS_DIR.exists() and any(FINE_TUNED_MODELS_DIR.glob("*_wordvectors.kv")):
+        MODELS_DIR = FINE_TUNED_MODELS_DIR
+        print(f"使用固定时期模型目录: {MODELS_DIR}")
+    elif SLIDING_WINDOW_MODELS_DIR.exists():
+        # 查找滑动窗口模型的子目录
+        subdirs = [d for d in SLIDING_WINDOW_MODELS_DIR.iterdir() if d.is_dir()]
+        if subdirs:
+            MODELS_DIR = subdirs[0]  # 使用第一个子目录
+            print(f"使用滑动窗口模型目录: {MODELS_DIR}")
+        else:
+            print(f"滑动窗口模型目录存在，但没有子目录")
+    else:
+        print(f"未找到模型目录，使用默认路径: {MODELS_DIR}")
+    
     models = {}
     model_files = list(MODELS_DIR.glob("*_wordvectors.kv"))
     
@@ -62,7 +82,6 @@ def load_models(MODELS_DIR):
             print(f"  加载 {period_name} 失败: {e}")
     
     return models
-
 
 def save_similar_words(models, keyword="法治", topn=20, output_dir="similar_words"):
     """

@@ -1,6 +1,5 @@
 """
-法治维度词表聚类扩展
-基于专家定义的核心词汇，通过聚类算法扩展各维度词表
+通过专家定义的维度词表，分析维度词表的语义相似度变化趋势
 """
 
 import os
@@ -87,146 +86,6 @@ def load_dimension_words(file_path):
         print(f"加载维度词表时出错: {e}")
         return {}
 
-def cluster_similar_words(models, similar_words_by_period, n_clusters=3, 
-                         exclude_words_path=None, top_n=150):
-    """
-    对相似词进行聚类分析
-    
-    Args:
-        models: 词向量模型字典
-        similar_words_by_period: 各时期相似词字典
-        n_clusters: 聚类数量
-        exclude_words_path: 排除词文件路径
-        top_n: 每个时期取前n个词
-        
-    Returns:
-        tuple: (聚类结果字典, 词向量矩阵, 聚类标签, 有效词列表)
-    """
-    # 获取所有时期的词汇并集
-    intersection, union, filtered_similar_words = utils.get_word_sets(
-        similar_words_by_period, top_n=top_n, exclude_words_path=exclude_words_path
-    )
-    
-    print(f"聚类分析使用词汇数量: {len(union)}")
-    
-    # 使用最新时期的模型进行聚类
-    latest_period = max(models.keys())
-    model = models[latest_period]
-    print(f"使用 {latest_period} 模型进行聚类")
-    
-    # 提取词向量
-    valid_words = []
-    word_vectors = []
-    
-    for word in union:
-        if word in model:
-            valid_words.append(word)
-            word_vectors.append(model[word])
-    
-    if len(valid_words) < n_clusters:
-        print(f"有效词汇数量({len(valid_words)})少于聚类数量({n_clusters})")
-        return {}, np.array([]), [], []
-    
-    word_vectors = np.array(word_vectors)
-    print(f"有效词汇数量: {len(valid_words)}")
-    
-    # 执行K-means聚类
-    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-    cluster_labels = kmeans.fit_predict(word_vectors)
-    
-    # 整理聚类结果
-    clusters = {}
-    for i in range(n_clusters):
-        cluster_words = [valid_words[j] for j in range(len(valid_words)) if cluster_labels[j] == i]
-        clusters[f"聚类{i+1}"] = cluster_words
-        print(f"聚类{i+1}: {len(cluster_words)} 个词")
-        print(f"  前10个词: {cluster_words[:10]}")
-    
-    return clusters, word_vectors, cluster_labels, valid_words
-
-def visualize_clusters(word_vectors, cluster_labels, valid_words, method='tsne'):
-    """
-    可视化聚类结果
-    
-    Args:
-        word_vectors: 词向量矩阵
-        cluster_labels: 聚类标签
-        valid_words: 词汇列表
-        method: 降维方法 ('tsne' 或 'pca')
-    """
-    if len(word_vectors) == 0:
-        print("没有有效的词向量数据，无法可视化")
-        return
-    
-    # 降维
-    if method == 'tsne':
-        reducer = TSNE(n_components=2, random_state=42, perplexity=min(30, len(word_vectors)-1))
-    else:
-        reducer = PCA(n_components=2, random_state=42)
-    
-    reduced_vectors = reducer.fit_transform(word_vectors)
-    
-    # 绘制散点图
-    plt.figure(figsize=(12, 8))
-    
-    # 为每个聚类使用不同颜色
-    unique_labels = np.unique(cluster_labels)
-    colors = plt.cm.Set3(np.linspace(0, 1, len(unique_labels)))
-    
-    for i, label in enumerate(unique_labels):
-        mask = cluster_labels == label
-        plt.scatter(reduced_vectors[mask, 0], reduced_vectors[mask, 1], 
-                   c=[colors[i]], label=f'聚类{label+1}', alpha=0.7, s=50)
-    
-    # 添加词汇标签（只显示部分，避免过于拥挤）
-    n_labels = min(50, len(valid_words))
-    indices = np.random.choice(len(valid_words), n_labels, replace=False)
-    
-    for idx in indices:
-        plt.annotate(valid_words[idx], 
-                    (reduced_vectors[idx, 0], reduced_vectors[idx, 1]),
-                    fontsize=8, alpha=0.7)
-    
-    plt.title(f'聚类结果可视化 ({method.upper()})')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.show()
-
-def save_cluster_results(clusters, output_path):
-    """保存聚类结果到文件"""
-    output_path = Path(output_path)
-    output_path.parent.mkdir(exist_ok=True)
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write("# 法治相关词汇聚类结果\n\n")
-        
-        for cluster_name, words in clusters.items():
-            f.write(f"# {cluster_name} ({len(words)}个词)\n")
-            f.write(f"{cluster_name}:\n")
-            
-            # 每行写10个词
-            for i in range(0, len(words), 10):
-                line_words = words[i:i+10]
-                f.write(" ".join(line_words) + "\n")
-            f.write("\n")
-    
-    print(f"已保存聚类结果到: {output_path}")
-
-def analyze_cluster_quality(word_vectors, cluster_labels):
-    """分析聚类质量"""
-    if len(set(cluster_labels)) > 1:
-        silhouette = silhouette_score(word_vectors, cluster_labels)
-        calinski = calinski_harabasz_score(word_vectors, cluster_labels)
-        
-        print(f"轮廓系数 (Silhouette Score): {silhouette:.3f}")
-        print(f"Calinski-Harabasz指数: {calinski:.3f}")
-        
-        return silhouette, calinski
-    else:
-        print("只有一个聚类，无法计算质量指标")
-        return None, None
-
 def calculate_dimension_similarities(models, dimension_words, target_word="法治", normalize=False):
     """
     计算目标词与各维度的相似度
@@ -273,8 +132,8 @@ def calculate_dimension_similarities(models, dimension_words, target_word="法�
                 period_similarities[dim] = 0
         
         if normalize:
-            sum_sim = sum(sim for sim in period_similarities.values())
-            period_similarities = {dim: sim / sum_sim for dim, sim in period_similarities.items()}
+            sum_sim = sum(period_similarities[dim] for dim in dimensions)
+            period_similarities = {dim: period_similarities[dim] / sum_sim for dim in dimensions}
             
         similarity_data.append(period_similarities)
     
@@ -398,43 +257,6 @@ def main():
     except Exception as e:
         print(f"加载相似词数据时出错: {e}")
         return
-    
-    # 3. 执行聚类分析
-    print("\n=== 执行4聚类分析 ===")
-    clusters_4, word_vectors_4, cluster_labels_4, valid_words_4 = cluster_similar_words(
-        models, similar_words_by_period, n_clusters=4, 
-        exclude_words_path="exclude_words.txt", top_n=150
-    )
-    
-    print("\n=== 执行3聚类分析 ===")
-    clusters_3, word_vectors_3, cluster_labels_3, valid_words_3 = cluster_similar_words(
-        models, similar_words_by_period, n_clusters=3, 
-        exclude_words_path="exclude_words.txt", top_n=150
-    )
-    
-    # 4. 可视化聚类结果
-    if len(word_vectors_4) > 0:
-        print("\n=== 可视化4聚类结果 ===")
-        visualize_clusters(word_vectors_4, cluster_labels_4, valid_words_4, method='tsne')
-    
-    if len(word_vectors_3) > 0:
-        print("\n=== 可视化3聚类结果 ===")
-        visualize_clusters(word_vectors_3, cluster_labels_3, valid_words_3, method='tsne')
-    
-    # 5. 保存聚类结果
-    if clusters_3:
-        save_cluster_results(clusters_3, topic_word_dir / "cluster_results_3.txt")
-    if clusters_4:
-        save_cluster_results(clusters_4, topic_word_dir / "cluster_results_4.txt")
-    
-    # 6. 分析聚类质量
-    if len(word_vectors_3) > 0:
-        print("\n=== 3聚类质量分析 ===")
-        analyze_cluster_quality(word_vectors_3, cluster_labels_3)
-    
-    if len(word_vectors_4) > 0:
-        print("\n=== 4聚类质量分析 ===")
-        analyze_cluster_quality(word_vectors_4, cluster_labels_4)
     
     # 7. 加载专家定义的维度词表并进行分析
     print("\n=== 维度相似度分析 ===")
