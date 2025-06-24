@@ -133,11 +133,132 @@ def calculate_dimension_similarities(models, dimension_words, target_word="法�
         
         if normalize:
             sum_sim = sum(period_similarities[dim] for dim in dimensions)
-            period_similarities = {dim: period_similarities[dim] / sum_sim for dim in dimensions}
+            for dim in dimensions:
+                if sum_sim == 0:
+                    period_similarities[dim] = 0
+                else:
+                    period_similarities[dim] = period_similarities[dim] / sum_sim
+            
             
         similarity_data.append(period_similarities)
     
     return pd.DataFrame(similarity_data)
+
+
+
+def expand_dimension_words_by_similarity(models, dimension_words, target_word="法治", 
+                                       similarity_threshold=0.3, max_words_per_dim=50):
+    """
+    基于词向量相似度扩展维度词表（使用所有模型的平均相似度）
+    
+    Args:
+        models: 词向量模型字典
+        dimension_words: 初始维度词表
+        target_word: 目标词（法治）
+        similarity_threshold: 相似度阈值
+        max_words_per_dim: 每个维度最大词数
+        
+    Returns:
+        dict: 扩展后的维度词表
+    """
+    expanded_words = {dim: set(words) for dim, words in dimension_words.items()}
+    
+    print(f"使用所有 {len(models)} 个模型的平均相似度进行词表扩展")
+    
+    # 收集所有时期中与目标词相似的候选词
+    candidate_words = set()
+    
+    for period, model in models.items():
+        if target_word in model:
+            similar_words = model.most_similar(target_word, topn=500)
+            for word, similarity in similar_words:
+                if similarity >= similarity_threshold:
+                    candidate_words.add(word)
+    
+    print(f"候选词数量: {len(candidate_words)}")
+    
+    # 为每个候选词计算跨时期的平均相似度
+    for word in candidate_words:
+        # 计算与目标词的平均相似度
+        target_similarities = []
+        for period, model in models.items():
+            if target_word in model and word in model:
+                try:
+                    sim = model.similarity(target_word, word)
+                    target_similarities.append(sim)
+                except:
+                    pass
+        
+        if not target_similarities or np.mean(target_similarities) < similarity_threshold:
+            continue
+            
+        # 计算该词与各维度核心词的平均相似度
+        dim_similarities = {}
+        
+        for dim, core_words in dimension_words.items():
+            all_dim_similarities = []
+            
+            for core_word in core_words:
+                period_similarities = []
+                for period, model in models.items():
+                    if core_word in model and word in model:
+                        try:
+                            sim = model.similarity(word, core_word)
+                            period_similarities.append(sim)
+                        except:
+                            pass
+                
+                if period_similarities:
+                    all_dim_similarities.append(np.mean(period_similarities))
+            
+            if all_dim_similarities:
+                dim_similarities[dim] = np.mean(all_dim_similarities)
+        
+        # 将词分配给相似度最高的维度
+        if dim_similarities:
+            best_dim = max(dim_similarities, key=dim_similarities.get)
+            if (dim_similarities[best_dim] > similarity_threshold and 
+                len(expanded_words[best_dim]) < max_words_per_dim):
+                expanded_words[best_dim].add(word)
+    
+    # 转换回列表格式
+    result = {dim: list(words) for dim, words in expanded_words.items()}
+    
+    print("\n扩展后的词表统计:")
+    for dim, words in result.items():
+        original_count = len(dimension_words[dim])
+        expanded_count = len(words)
+        new_words_count = expanded_count - original_count
+        print(f"{dim}: {expanded_count} 个词 (原有 {original_count} + 新增 {new_words_count})")
+    
+    return result
+
+
+# 保存扩展后的词表
+def save_expanded_dimension_words(expanded_words, output_path):
+    """保存扩展后的维度词表"""
+    output_path = Path(output_path)
+    output_path.parent.mkdir(exist_ok=True)
+    
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write("# 扩展后的法治4维度词表\n\n")
+        
+        for dim, words in expanded_words.items():
+            f.write(f"# {dim} ({len(words)}个词)\n")
+            f.write(f"{dim}:\n")
+            
+            # 每行写10个词
+            for i in range(0, len(words), 10):
+                line_words = words[i:i+10]
+                f.write(" ".join(line_words) + "\n")
+            f.write("\n")
+    
+    print(f"已保存扩展词表到: {output_path}")
+
+
+
+
+
 
 def plot_dimension_trends(similarity_df, title="法治维度语义相似度变化趋势"):
     """绘制维度趋势图"""
