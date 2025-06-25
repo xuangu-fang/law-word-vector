@@ -109,76 +109,97 @@
 - **目标 (Goal)**:
   - 直接回应手稿中的核心问题："哪些概念被逐渐纳入或排除出法治语义场？"
   - 量化并识别在两个连续时期之间，与"法治"的语义关系发生最大变化（最显著拉近或疏远）的词汇。
+  - 通过聚焦于一个**特定的、有意义的词汇池**（如所有时期的Top-N相似词，或专家定义的维度词表），而非整个模型的数万词汇，来确保分析的聚焦性和解释力。
   - 这为叙述"法治"内涵的动态演变提供了非常具体和有力的证据。例如，"'治理'一词在2013年后与'法治'的联系显著增强"。
 
 - **技术栈 (Tech Stack)**:
-  - `pandas`: 用于数据处理和排序。
-  - `matplotlib`/`seaborn`: 用于绘制条形图进行可视化。
+  - `pandas`: 用于数据处理、排序和差值计算。
+  - `matplotlib`/`seaborn`: 用于绘制水平条形图，直观地展示变化最大的词汇。
 
 - **数据准备 (Data Preparation)**:
-  1.  输入：一个包含所有分时期模型的字典。
-  2.  流程：
-      - 获取所有模型词汇表的并集。
-      - 对每个词，计算它在各个时期与"法治"的相似度。如果不存在则记为0或NaN。
-      - 构建一个DataFrame，行为词汇，列为时期，值为相似度。
-      - 计算相邻时期之间相似度的差值。
+  1.  **定义词汇池 (Vocabulary Pool)**：这是分析的核心。我们需要先确定要追踪哪些词的变化。策略可以包括：
+      - **策略A (并集策略)**：获取"法治"在所有时期Top-N相似词的并集。这是最常用的策略，能捕捉到所有曾与"法治"紧密相关的词。
+      - **策略B (文件策略)**：从一个指定的词表文件（如 `dimension_words_4d.txt`）加载词汇。这允许我们观察特定维度内部的词汇是如何相对"法治"变化的。
+  2.  **计算相似度矩阵**：
+      - 输入：分时期的`gensim`模型、目标词（"法治"）、以及上一步确定的词汇池。
+      - 流程：构建一个DataFrame，其中行为词汇池中的每个词，列为每个时期，值为该词与"法治"在该时期的余弦相似度。如果词不存在，则记为NaN。
+  3.  **计算变化**：计算相邻时期之间相似度的差值，得到一个新的DataFrame。
 
 - **核心代码结构 (Core Code Structure)**:
   ```python
   import pandas as pd
-  
-  def calculate_similarity_changes(models, target_word="法治"):
-      """计算所有词汇与目标词在不同时期的相似度变化"""
-      # 1. 获取所有词汇
-      vocab = set()
-      for model in models.values():
-          vocab.update(model.wv.index_to_key)
-          
-      # 2. 计算各时期相似度
-      similarity_data = {}
-      periods = sorted(models.keys())
-      for period in periods:
-          model = models[period]
-          sims = []
-          if target_word in model.wv:
-              for word in vocab:
-                  if word in model.wv:
-                      sims.append(model.wv.similarity(target_word, word))
-                  else:
-                      sims.append(0)
-          else: # 如果目标词不存在
-              sims = [0] * len(vocab)
-          similarity_data[period] = sims
-          
-      df = pd.DataFrame(similarity_data, index=list(vocab))
-      
-      # 3. 计算变化
-      change_df = pd.DataFrame()
-      for i in range(len(periods) - 1):
-          period1 = periods[i]
-          period2 = periods[i+1]
-          change_df[f'{period1}_to_{period2}'] = df[period2] - df[period1]
-          
-      return change_df
+  import seaborn as sns
+  import matplotlib.pyplot as plt
 
-  def get_top_gainers_losers(change_df, column_name, top_n=20):
-      """获取指定时期的获益者和失势者"""
-      changes = change_df[column_name].dropna()
-      gainers = changes.nlargest(top_n)
-      losers = changes.nsmallest(top_n)
-      return gainers, losers
+  class SemanticChangeAnalyzer:
+      def __init__(self, models):
+          self.models = models
+          self.periods = sorted(models.keys())
+
+      def _get_vocabulary_pool(self, strategy='union', **kwargs):
+          # ... 实现获取词汇池的逻辑 ...
+          pass
+
+      def analyze_similarity_change(self, target_word="法治", strategy='union', **kwargs):
+          """计算词汇与目标词在不同时期的相似度变化"""
+          # 1. 获取词汇池
+          vocab_pool = self._get_vocabulary_pool(strategy, target_word=target_word, **kwargs)
+          
+          # 2. 计算各时期相似度
+          similarity_data = {}
+          for period in self.periods:
+              model = self.models[period]
+              sims = {}
+              if target_word in model:
+                  for word in vocab_pool:
+                      if word in model and word != target_word:
+                          sims[word] = model.similarity(target_word, word)
+                      else:
+                          sims[word] = float('nan')
+              similarity_data[period] = pd.Series(sims)
+          
+          similarity_df = pd.DataFrame(similarity_data).fillna(0) # 用0填充缺失值
+          
+          # 3. 计算变化
+          change_df = pd.DataFrame()
+          for i in range(len(self.periods) - 1):
+              period1, period2 = self.periods[i], self.periods[i+1]
+              change_df[f'{period1}_to_{period2}'] = similarity_df[period2] - similarity_df[period1]
+              
+          return change_df.sort_values(by=f'{period1}_to_{period2}', ascending=False)
+
+      def plot_gainers_losers(self, change_series, top_n=20, title=""):
+          """可视化获益者与失势者"""
+          gainers = change_series.nlargest(top_n)
+          losers = change_series.nsmallest(top_n).sort_values(ascending=False)
+          
+          fig, axes = plt.subplots(1, 2, figsize=(18, 10))
+          sns.barplot(x=gainers.values, y=gainers.index, ax=axes[0], palette='Greens_r')
+          axes[0].set_title(f'Top {top_n} Gainers')
+          
+          sns.barplot(x=losers.values, y=losers.index, ax=axes[1], palette='Reds_r')
+          axes[1].set_title(f'Top {top_n} Losers')
+          
+          fig.suptitle(title, size=20)
+          plt.tight_layout(rect=[0, 0, 1, 0.96])
+          plt.show()
 
   # 主流程
-  # change_df = calculate_similarity_changes(models)
-  # gainers, losers = get_top_gainers_losers(change_df, 'Era2_to_Era3', top_n=20)
-  # # 使用matplotlib绘制条形图
+  # analyzer = SemanticChangeAnalyzer(models)
+  # change_df = analyzer.analyze_similarity_change(target_word="法治", strategy='union', top_n=200)
+  # for transition in change_df.columns:
+  #     analyzer.plot_gainers_losers(change_df[transition], title=f'Semantic Change: {transition}')
   ```
 
 - **产出 (Output)**:
-  - 每个时期过渡阶段（如 Era1->Era2, Era2->Era3）的"获益者"和"失势者"列表。
-  - 可视化为两个水平条形图：一个显示相似度增加最多的Top 20词，另一个显示减少最多的Top 20词。
+  - 每个时期过渡阶段（如 Era1->Era2, Era2->Era3）的"获益者"和"失势者"的 `pandas.DataFrame`。
+  - 可视化为并排的两个水平条形图：
+    - 左侧为"获益者"(Gainers)，即与"法治"相似度增加最多的Top-N词汇，用绿色表示。
+    - 右侧为"失势者"(Losers)，即与"法治"相似度减少最多的Top-N词汇，用红色表示。
 
 ---
+*此方案专注于比较相邻时期的语义距离变化，是一种直接且有效的历时分析方法。*
+
 ### 2.3 词义邻域分析 (Word Neighborhood Analysis)
 
 - **目标 (Goal)**:

@@ -230,8 +230,8 @@ class SemanticNetworkAnalyzer:
                 node_colors_map[node] = '#1f78b4'
         
         # 2. 无论何种情况，都用特殊颜色覆盖中心词
-        if target_word and target_word in node_colors_map:
-            node_colors_map[target_word] = '#ff7f0e' # 亮橙色
+        # if target_word and target_word in node_colors_map:
+        node_colors_map[target_word] = '#ff7f0e' # 亮橙色
 
         node_colors = [node_colors_map[node] for node in G.nodes()]
 
@@ -291,22 +291,22 @@ def main():
 
     # --- 场景1: 分析单个时期，节点大小由degree决定，并保存pyvis图 ---
     print("\n\n--- 场景1: 目标词中心网络 (size by degree, with Pyvis) ---")
-    period = 'Era3_2014-2024'
-    params_sc1 = {'target': '法治', 'top_n': 80, 'quantile': 0.75}
-    vocab_sc1 = analyzer.get_vocabulary(strategy='target_centric', period=period, target_word=params_sc1['target'], top_n=params_sc1['top_n'])
-    G_sc1 = analyzer.create_semantic_network(analyzer.models[period], vocab_sc1, similarity_quantile=params_sc1['quantile'])
-    title_info_sc1 = {'period': period, 'params': params_sc1}
-    analyzer.visualize_network(G_sc1, title_info_sc1, output_root / 'target_centric', size_by_degree=True, save_pyvis=True)
+    params_sc1 = {'target': '法治', 'top_n': 80, 'quantile': 0.8}
+    for period in analyzer.periods:
+        vocab_sc1 = analyzer.get_vocabulary(strategy='target_centric', period=period, target_word=params_sc1['target'], top_n=params_sc1['top_n'])
+        G_sc1 = analyzer.create_semantic_network(analyzer.models[period], vocab_sc1, similarity_quantile=params_sc1['quantile'])
+        title_info_sc1 = {'period': period, 'params': params_sc1}
+        analyzer.visualize_network(G_sc1, title_info_sc1, output_root / 'target_centric', size_by_degree=True, save_pyvis=True)
 
     # --- 场景2: 从维度文件加载，并对每个时期生成网络 ---
     print("\n\n--- 场景2: 从维度文件加载并着色 ---")
     dim_file = PROJECT_ROOT / "notebooks" / "topic_word" / "dimension_words_4d.txt"
-    params_sc2 = {'source': '4d_dims', 'quantile': 0.3}
+    params_sc2 = {'source': '4d_dims', 'quantile': 0.8}
     vocab_sc2 = analyzer.get_vocabulary(strategy='from_file', file_path=dim_file, target_word='法治')
     for period in analyzer.periods:
         G_sc2 = analyzer.create_semantic_network(analyzer.models[period], vocab_sc2, similarity_quantile=params_sc2['quantile'])
         title_info_sc2 = {'period': period, 'params': params_sc2}
-        analyzer.visualize_network(G_sc2, title_info_sc2, output_root / 'from_dims_file')
+        analyzer.visualize_network(G_sc2, title_info_sc2, output_root / 'from_dims_file', size_by_degree=True, save_pyvis=True)
 
     # --- 场景3: 使用时期特定的词表文件 ---
     print("\n\n--- 场景3: 使用时期特定的专家词表 ---")
@@ -316,13 +316,13 @@ def main():
         'Era2_1997-2013': base_path / 'Era2_1997-2013_final.txt',
         'Era3_2014-2024': base_path / 'Era3_2014-2024_final.txt'
     }
-    params_sc3 = {'source': 'expert_list', 'quantile': 0.6}
+    params_sc3 = {'source': 'expert_list', 'quantile': 0.8}
     target_sc3 = '法治'
     for period in analyzer.periods:
         vocab_sc3 = analyzer.get_vocabulary(strategy='from_period_specific_files', period=period, file_map=file_map_sc3, target_word=target_sc3)
         G_sc3 = analyzer.create_semantic_network(analyzer.models[period], vocab_sc3, similarity_quantile=params_sc3['quantile'])
         title_info_sc3 = {'period': period, 'params': params_sc3, 'target_word': target_sc3}
-        analyzer.visualize_network(G_sc3, title_info_sc3, output_root / 'period_specific_files')
+        analyzer.visualize_network(G_sc3, title_info_sc3, output_root / 'period_specific_files', size_by_degree=True, save_pyvis=True)
 
 
 if __name__ == "__main__":
