@@ -98,7 +98,7 @@ class ClusteringAnalyzer:
             
         return clusters, word_vectors, cluster_labels, valid_words
 
-    def visualize_clusters(self, word_vectors, cluster_labels, valid_words, n_clusters, method='tsne'):
+    def visualize_clusters(self, word_vectors, cluster_labels, valid_words, n_clusters, method='tsne',filename=None):
         """可视化聚类结果"""
         if len(word_vectors) == 0:
             return
@@ -122,6 +122,12 @@ class ClusteringAnalyzer:
         plt.legend()
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
+        
+        # 保存图片
+        if filename:
+            plt.savefig(self.output_dir / f"{filename}.png", dpi=300, bbox_inches='tight')
+            print(f"已保存聚类结果到: {self.output_dir / filename}.png")
+        
         plt.show()
 
     def save_cluster_results(self, clusters, filename):
@@ -170,7 +176,7 @@ class ClusteringAnalyzer:
             )
             if not clusters: continue
 
-            self.visualize_clusters(vectors, labels, words, n_clusters=n)
+            self.visualize_clusters(vectors, labels, words, n_clusters=n,filename=f"cluster_results_{n}d")
             self.save_cluster_results(clusters, f"cluster_results_{n}d.txt")
             self.analyze_cluster_quality(vectors, labels)
             

@@ -65,6 +65,8 @@ class DimensionAnalyzer:
             
         self.models = models
         print(f"\nDimensionAnalyzer 初始化成功，共加载 {len(self.models)} 个模型。")
+        self.output_dir = PROJECT_ROOT / "output" / "dimension_analysis"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def _load_words_from_simple_list(self, file_path):
         if not file_path: return set()
@@ -287,7 +289,7 @@ class DimensionAnalyzer:
                 f.write("\n")
         print(f"已保存扩展词表到: {output_path}")
 
-    def plot_dimension_trends(self, similarity_df, title="法治维度语义相似度变化趋势"):
+    def plot_dimension_trends(self, similarity_df, title="法治维度语义相似度变化趋势",filename=None):
         """绘制维度趋势图"""
         plt.figure(figsize=(12, 6))
         periods = similarity_df["时期"]
@@ -301,9 +303,12 @@ class DimensionAnalyzer:
         plt.grid(True, alpha=0.3)
         plt.xticks(rotation=45)
         plt.tight_layout()
+        if filename:
+            plt.savefig(self.output_dir / f"{filename}.png", dpi=300, bbox_inches='tight')
+            print(f"已保存维度趋势图到: {self.output_dir / filename}.png") 
         plt.show()
 
-    def plot_dimension_radar(self, similarity_df, title="法治维度语义结构雷达图"):
+    def plot_dimension_radar(self, similarity_df, title="法治维度语义结构雷达图",filename=None):
         """绘制雷达图"""
         periods = similarity_df["时期"].tolist()
         dimensions = [col for col in similarity_df.columns if col != "时期"]
@@ -325,9 +330,12 @@ class DimensionAnalyzer:
         ax.set_xticklabels(dimensions)
         plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
         plt.title(title, size=15, pad=20)
+        if filename:
+            plt.savefig(self.output_dir / f"{filename}.png", dpi=300, bbox_inches='tight')
+            print(f"已保存维度雷达图到: {self.output_dir / filename}.png")
         plt.show()
 
-    def plot_dimension_heatmap(self, similarity_df, title="法治维度语义相似度热力图"):
+    def plot_dimension_heatmap(self, similarity_df, title="法治维度语义相似度热力图",filename=None):
         """绘制热力图"""
         similarity_df = similarity_df.set_index('时期')
         plt.figure(figsize=(10, 6))
@@ -335,6 +343,10 @@ class DimensionAnalyzer:
         plt.title(title)
         plt.ylabel("时期")
         plt.tight_layout()
+        
+        if filename:
+            plt.savefig(self.output_dir / f"{filename}.png", dpi=300, bbox_inches='tight')
+            print(f"已保存维度热力图到: {self.output_dir / filename}.png")
         plt.show()
     
     def run_analysis(self, dimension_words_path, target_word="法治", normalize=False):
@@ -366,9 +378,9 @@ class DimensionAnalyzer:
         dim_count = len(dimension_words)
         base_title = f"法治{dim_count}维度"
         
-        self.plot_dimension_trends(similarity_df.copy(), f"{base_title}语义相似度变化趋势")
-        self.plot_dimension_radar(similarity_df.copy(), f"{base_title}语义结构雷达图")
-        self.plot_dimension_heatmap(similarity_df.copy(), f"{base_title}语义相似度热力图")
+        self.plot_dimension_trends(similarity_df.copy(), f"{base_title}语义相似度变化趋势",filename=f"{base_title}_trends")
+        self.plot_dimension_radar(similarity_df.copy(), f"{base_title}语义结构雷达图",filename=f"{base_title}_radar")
+        self.plot_dimension_heatmap(similarity_df.copy(), f"{base_title}语义相似度热力图",filename=f"{base_title}_heatmap")
 
 
 def main():
@@ -413,6 +425,12 @@ def main():
         analyzer.run_analysis(expanded_4d_output_path)
 
     print("\n=== 分析完成 ===")
+
+    # 4. 分析基于聚类结果的维度词表
+    print("\n=== 分析基于聚类结果的维度词表 ===")
+    analyzer.run_analysis(topic_word_dir / "cluster_results_3d.txt")
+    analyzer.run_analysis(topic_word_dir / "cluster_results_4d.txt")
+    # analyzer.run_analysis(topic_word_dir / "cluster_results_5d.txt")
 
 if __name__ == "__main__":
     main() 
