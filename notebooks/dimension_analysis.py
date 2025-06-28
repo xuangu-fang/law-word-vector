@@ -49,375 +49,369 @@ plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 PROJECT_ROOT = Path.cwd().parent
 MODELS_DIR = PROJECT_ROOT / "models"
 
-# 可能的模型目录
-FINE_TUNED_MODELS_DIR = MODELS_DIR / "fine_tuned_vectors_flexible"
-SLIDING_WINDOW_MODELS_DIR = MODELS_DIR / "fine_tuned_vectors_sliding_window"
 
+class DimensionAnalyzer:
+    """封装维度分析相关的功能"""
+    
+    def __init__(self, models):
+        """
+        初始化分析器
+        
+        Args:
+            models (dict): 已加载的词向量模型字典
+        """
+        if not models:
+            raise ValueError("没有成功加载任何模型，请提供有效的模型字典")
+            
+        self.models = models
+        print(f"\nDimensionAnalyzer 初始化成功，共加载 {len(self.models)} 个模型。")
 
-def load_dimension_words(file_path):
-    """
-    加载维度词表文件
-    
-    Args:
-        file_path: 维度词表文件路径
-        
-    Returns:
-        dict: 维度名称到词列表的映射
-    """
-    dimensions = {}
-    current_dimension = None
-    
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue
-                    
-                if line.endswith(':'):
-                    current_dimension = line[:-1]
-                    dimensions[current_dimension] = []
-                elif current_dimension:
-                    words = line.split()
-                    dimensions[current_dimension].extend(words)
-                    
-        return dimensions
-    except Exception as e:
-        print(f"加载维度词表时出错: {e}")
-        return {}
+    def _load_words_from_simple_list(self, file_path):
+        if not file_path: return set()
+        words = set()
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith('#'): continue
+                    word = line.split()[0]
+                    words.add(word)
+            return words
+        except FileNotFoundError: return set()
 
-def calculate_dimension_similarities(models, dimension_words, target_word="法治", normalize=False):
-    """
-    计算目标词与各维度的相似度
-    
-    Args:
-        models: 词向量模型字典
-        dimension_words: 维度词表字典
-        target_word: 目标词
-        normalize: 是否归一化 (默认False, 确保每个period的各个维度的相似度总和为1)
+    def _load_dimension_words(self, file_path):
+        """
+        加载维度词表文件
         
-    Returns:
-        DataFrame: 各时期各维度的相似度矩阵
-    """
-    periods = sorted(models.keys())
-    dimensions = list(dimension_words.keys())
-    
-    # 创建结果DataFrame
-    similarity_data = []
-    
-    for period in periods:
-        model = models[period]
-        if target_word not in model:
-            print(f"警告: '{target_word}'在{period}模型中不存在")
-            continue
+        Args:
+            file_path (str or Path): 维度词表文件路径
             
-        period_similarities = {"时期": period}
+        Returns:
+            dict: 维度名称到词列表的映射
+        """
+        dimensions = {}
+        current_dimension = None
         
-        for dim in dimensions:
-            dim_words = dimension_words[dim]
-            similarities = []
-            
-            for word in dim_words:
-                if word in model and word != target_word:
-                    try:
-                        sim = model.similarity(target_word, word)
-                        similarities.append(sim)
-                    except:
-                        pass
-            
-            if similarities:
-                avg_sim = np.mean(similarities)
-                period_similarities[dim] = avg_sim
-            else:
-                period_similarities[dim] = 0
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                        
+                    if line.endswith(':'):
+                        current_dimension = line[:-1]
+                        dimensions[current_dimension] = []
+                    elif current_dimension:
+                        words = line.split()
+                        dimensions[current_dimension].extend(words)
+                        
+            return dimensions
+        except Exception as e:
+            print(f"加载维度词表 '{file_path}' 时出错: {e}")
+            return {}
+
+    def calculate_dimension_similarities(self, dimension_words, target_word="法治", normalize=False):
+        """
+        计算目标词与各维度的相似度
         
-        if normalize:
-            sum_sim = sum(period_similarities[dim] for dim in dimensions)
+        Args:
+            dimension_words (dict): 维度词表字典
+            target_word (str): 目标词
+            normalize (bool): 是否归一化 (确保每个period的各个维度的相似度总和为1)
+            
+        Returns:
+            DataFrame: 各时期各维度的相似度矩阵
+        """
+        periods = sorted(self.models.keys())
+        dimensions = list(dimension_words.keys())
+        
+        similarity_data = []
+        
+        for period in periods:
+            model = self.models[period]
+            if target_word not in model:
+                print(f"警告: '{target_word}' 在 {period} 模型中不存在")
+                continue
+                
+            period_similarities = {"时期": period}
+            
             for dim in dimensions:
-                if sum_sim == 0:
-                    period_similarities[dim] = 0
-                else:
-                    period_similarities[dim] = period_similarities[dim] / sum_sim
-            
-            
-        similarity_data.append(period_similarities)
-    
-    return pd.DataFrame(similarity_data)
-
-
-
-def expand_dimension_words_by_similarity(models, dimension_words, target_word="法治", 
-                                       similarity_threshold=0.3, max_words_per_dim=50):
-    """
-    基于词向量相似度扩展维度词表（使用所有模型的平均相似度）
-    
-    Args:
-        models: 词向量模型字典
-        dimension_words: 初始维度词表
-        target_word: 目标词（法治）
-        similarity_threshold: 相似度阈值
-        max_words_per_dim: 每个维度最大词数
-        
-    Returns:
-        dict: 扩展后的维度词表
-    """
-    expanded_words = {dim: set(words) for dim, words in dimension_words.items()}
-    
-    print(f"使用所有 {len(models)} 个模型的平均相似度进行词表扩展")
-    
-    # 收集所有时期中与目标词相似的候选词
-    candidate_words = set()
-    
-    for period, model in models.items():
-        if target_word in model:
-            similar_words = model.most_similar(target_word, topn=500)
-            for word, similarity in similar_words:
-                if similarity >= similarity_threshold:
-                    candidate_words.add(word)
-    
-    print(f"候选词数量: {len(candidate_words)}")
-    
-    # 为每个候选词计算跨时期的平均相似度
-    for word in candidate_words:
-        # 计算与目标词的平均相似度
-        target_similarities = []
-        for period, model in models.items():
-            if target_word in model and word in model:
-                try:
-                    sim = model.similarity(target_word, word)
-                    target_similarities.append(sim)
-                except:
-                    pass
-        
-        if not target_similarities or np.mean(target_similarities) < similarity_threshold:
-            continue
-            
-        # 计算该词与各维度核心词的平均相似度
-        dim_similarities = {}
-        
-        for dim, core_words in dimension_words.items():
-            all_dim_similarities = []
-            
-            for core_word in core_words:
-                period_similarities = []
-                for period, model in models.items():
-                    if core_word in model and word in model:
+                dim_words = dimension_words[dim]
+                similarities = []
+                
+                for word in dim_words:
+                    if word in model and word != target_word:
                         try:
-                            sim = model.similarity(word, core_word)
-                            period_similarities.append(sim)
-                        except:
+                            sim = model.similarity(target_word, word)
+                            similarities.append(sim)
+                        except KeyError:
                             pass
                 
-                if period_similarities:
-                    all_dim_similarities.append(np.mean(period_similarities))
+                if similarities:
+                    period_similarities[dim] = np.mean(similarities)
+                else:
+                    period_similarities[dim] = 0
             
-            if all_dim_similarities:
-                dim_similarities[dim] = np.mean(all_dim_similarities)
+            if normalize:
+                sum_sim = sum(period_similarities.get(dim, 0) for dim in dimensions)
+                if sum_sim > 0:
+                    for dim in dimensions:
+                        period_similarities[dim] = period_similarities.get(dim, 0) / sum_sim
+                else:
+                    for dim in dimensions:
+                        period_similarities[dim] = 0
+                        
+            similarity_data.append(period_similarities)
         
-        # 将词分配给相似度最高的维度
-        if dim_similarities:
-            best_dim = max(dim_similarities, key=dim_similarities.get)
-            if (dim_similarities[best_dim] > similarity_threshold and 
-                len(expanded_words[best_dim]) < max_words_per_dim):
-                expanded_words[best_dim].add(word)
-    
-    # 转换回列表格式
-    result = {dim: list(words) for dim, words in expanded_words.items()}
-    
-    print("\n扩展后的词表统计:")
-    for dim, words in result.items():
-        original_count = len(dimension_words[dim])
-        expanded_count = len(words)
-        new_words_count = expanded_count - original_count
-        print(f"{dim}: {expanded_count} 个词 (原有 {original_count} + 新增 {new_words_count})")
-    
-    return result
+        return pd.DataFrame(similarity_data)
 
-
-# 保存扩展后的词表
-def save_expanded_dimension_words(expanded_words, output_path):
-    """保存扩展后的维度词表"""
-    output_path = Path(output_path)
-    output_path.parent.mkdir(exist_ok=True)
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write("# 扩展后的法治4维度词表\n\n")
+    def expand_dimension_words_by_similarity(self, dimension_words, target_word="法治", 
+                                           similarity_threshold=0.3, max_words_per_dim=50,
+                                           candidate_source='model', candidate_files=None):
+        """
+        基于词向量相似度扩展维度词表
         
-        for dim, words in expanded_words.items():
-            f.write(f"# {dim} ({len(words)}个词)\n")
-            f.write(f"{dim}:\n")
+        Args:
+            dimension_words (dict): 初始维度词表
+            target_word (str): 目标词
+            similarity_threshold (float): 相似度阈值
+            max_words_per_dim (int): 每个维度最大词数
+            candidate_source (str): 候选词来源，'model' 或 'files'
+            candidate_files (dict): 各时期对应的候选词文件路径字典
             
-            # 每行写10个词
-            for i in range(0, len(words), 10):
-                line_words = words[i:i+10]
-                f.write(" ".join(line_words) + "\n")
-            f.write("\n")
-    
-    print(f"已保存扩展词表到: {output_path}")
-
-
-
-
-
-
-def plot_dimension_trends(similarity_df, title="法治维度语义相似度变化趋势"):
-    """绘制维度趋势图"""
-    plt.figure(figsize=(12, 6))
-    
-    periods = similarity_df["时期"]
-    dimensions = [col for col in similarity_df.columns if col != "时期"]
-    
-    for dim in dimensions:
-        plt.plot(periods, similarity_df[dim], marker='o', linewidth=2, label=dim)
-    
-    plt.title(title)
-    plt.xlabel("时期")
-    plt.ylabel("平均相似度")
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
-    
-    return plt.gcf()
-
-def plot_dimension_radar(similarity_df, title="法治维度语义结构雷达图"):
-    """绘制雷达图"""
-    periods = similarity_df["时期"].tolist()
-    dimensions = [col for col in similarity_df.columns if col != "时期"]
-    N = len(dimensions)
-    
-    # 设置角度
-    angles = [n / float(N) * 2 * np.pi for n in range(N)]
-    angles += angles[:1]  # 闭合雷达图
-    
-    # 创建图形
-    fig, ax = plt.subplots(figsize=(10, 8), subplot_kw=dict(polar=True))
-    
-    # 为每个时期绘制一条线
-    colors = ['red', 'blue', 'green', 'orange', 'purple']
-    for i, period in enumerate(periods):
-        values = similarity_df.iloc[i][dimensions].tolist()
-        values += values[:1]  # 闭合雷达图
+        Returns:
+            dict: 扩展后的维度词表
+        """
+        expanded_words = {dim: set(words) for dim, words in dimension_words.items()}
+        print(f"使用所有 {len(self.models)} 个模型的平均相似度进行词表扩展")
         
-        # 绘制线条
-        ax.plot(angles, values, linewidth=2, label=period, color=colors[i % len(colors)])
-        # 填充区域
-        ax.fill(angles, values, alpha=0.1, color=colors[i % len(colors)])
-    
-    # 设置标签
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(dimensions)
-    
-    # 添加图例和标题
-    plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0))
-    plt.title(title, size=15, pad=20)
-    plt.show()
-    
-    return fig
+        candidate_words = set()
+        
+        if candidate_source == 'model':
+            # 原有逻辑：从模型动态计算候选词
+            for period, model in self.models.items():
+                if target_word in model:
+                    similar_words = model.most_similar(target_word, topn=500)
+                    for word, similarity in similar_words:
+                        if similarity >= similarity_threshold:
+                            candidate_words.add(word)
+        elif candidate_source == 'files':
+            # 新增逻辑：从专家定义的文件中读取候选词
+            if not candidate_files:
+                print("警告: 未提供候选词文件路径，将使用模型动态计算")
+                candidate_source = 'model'
+                for period, model in self.models.items():
+                    if target_word in model:
+                        similar_words = model.most_similar(target_word, topn=500)
+                        for word, similarity in similar_words:
+                            if similarity >= similarity_threshold:
+                                candidate_words.add(word)
+            else: # NOTE: not finished
+                for period, file_path in candidate_files.items():
+                    if Path(file_path).exists():
+                        try:
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                for line in f:
+                                    line = line.strip()
+                                    if line and not line.startswith('#'):
+                                        words = line.split()
+                                        candidate_words.update(words)
+                        except Exception as e:
+                            print(f"读取文件 {file_path} 时出错: {e}")
+                    else:
+                        print(f"警告: 文件 {file_path} 不存在")
+        
+        print(f"候选词数量: {len(candidate_words)}")
+        
+        for word in candidate_words:
+            target_similarities = []
+            for model in self.models.values():
+                if target_word in model and word in model:
+                    try:
+                        sim = model.similarity(target_word, word)
+                        target_similarities.append(sim)
+                    except KeyError:
+                        pass
+            
+            if not target_similarities or np.mean(target_similarities) < similarity_threshold:
+                continue
+                
+            dim_similarities = {}
+            for dim, core_words in dimension_words.items():
+                all_dim_similarities = []
+                for core_word in core_words:
+                    period_similarities = []
+                    for model in self.models.values():
+                        if core_word in model and word in model:
+                            try:
+                                sim = model.similarity(word, core_word)
+                                period_similarities.append(sim)
+                            except KeyError:
+                                pass
+                    if period_similarities:
+                        all_dim_similarities.append(np.mean(period_similarities))
+                
+                if all_dim_similarities:
+                    dim_similarities[dim] = np.mean(all_dim_similarities)
+            
+            if dim_similarities:
+                best_dim = max(dim_similarities, key=dim_similarities.get)
+                if (dim_similarities[best_dim] > similarity_threshold and 
+                    len(expanded_words[best_dim]) < max_words_per_dim):
+                    expanded_words[best_dim].add(word)
+        
+        result = {dim: sorted(list(words)) for dim, words in expanded_words.items()}
+        
+        print("\n扩展后的词表统计:")
+        for dim, words in result.items():
+            original_count = len(dimension_words.get(dim, []))
+            expanded_count = len(words)
+            print(f"{dim}: {expanded_count} 个词 (原有 {original_count} + 新增 {expanded_count - original_count})")
+        
+        return result
 
-def plot_dimension_heatmap(similarity_df, title="法治维度语义相似度热力图"):
-    """绘制热力图"""
-    # 准备数据
-    periods = similarity_df["时期"].tolist()
-    dimensions = [col for col in similarity_df.columns if col != "时期"]
+    def save_expanded_dimension_words(self, expanded_words, output_path):
+        """保存扩展后的维度词表"""
+        output_path = Path(output_path)
+        output_path.parent.mkdir(exist_ok=True, parents=True)
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write("# 扩展后的法治维度词表\n\n")
+            for dim, words in expanded_words.items():
+                f.write(f"# {dim} ({len(words)}个词)\n")
+                f.write(f"{dim}:\n")
+                for i in range(0, len(words), 10):
+                    line_words = words[i:i+10]
+                    f.write(" ".join(line_words) + "\n")
+                f.write("\n")
+        print(f"已保存扩展词表到: {output_path}")
+
+    def plot_dimension_trends(self, similarity_df, title="法治维度语义相似度变化趋势"):
+        """绘制维度趋势图"""
+        plt.figure(figsize=(12, 6))
+        periods = similarity_df["时期"]
+        dimensions = [col for col in similarity_df.columns if col != "时期"]
+        for dim in dimensions:
+            plt.plot(periods, similarity_df[dim], marker='o', linewidth=2, label=dim)
+        plt.title(title)
+        plt.xlabel("时期")
+        plt.ylabel("平均相似度")
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+
+    def plot_dimension_radar(self, similarity_df, title="法治维度语义结构雷达图"):
+        """绘制雷达图"""
+        periods = similarity_df["时期"].tolist()
+        dimensions = [col for col in similarity_df.columns if col != "时期"]
+        N = len(dimensions)
+        
+        angles = [n / float(N) * 2 * np.pi for n in range(N)]
+        angles += angles[:1]
+        
+        fig, ax = plt.subplots(figsize=(10, 8), subplot_kw=dict(polar=True))
+        colors = plt.cm.get_cmap('Set1', len(periods))
+        
+        for i, period in enumerate(periods):
+            values = similarity_df.loc[similarity_df['时期'] == period, dimensions].values.flatten().tolist()
+            values += values[:1]
+            ax.plot(angles, values, linewidth=2, linestyle='solid', label=period, color=colors(i))
+            ax.fill(angles, values, alpha=0.1, color=colors(i))
+        
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(dimensions)
+        plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+        plt.title(title, size=15, pad=20)
+        plt.show()
+
+    def plot_dimension_heatmap(self, similarity_df, title="法治维度语义相似度热力图"):
+        """绘制热力图"""
+        similarity_df = similarity_df.set_index('时期')
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(similarity_df, annot=True, fmt='.3f', cmap="YlOrRd", linewidths=.5)
+        plt.title(title)
+        plt.ylabel("时期")
+        plt.tight_layout()
+        plt.show()
     
-    # 创建矩阵
-    matrix_data = similarity_df[dimensions].values
-    
-    # 绘制热力图
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(matrix_data, 
-                xticklabels=dimensions, 
-                yticklabels=periods,
-                annot=True, 
-                fmt='.3f', 
-                cmap="YlOrRd", 
-                linewidths=0.5)
-    
-    plt.title(title)
-    plt.tight_layout()
-    plt.show()
-    
-    return plt.gcf()
+    def run_analysis(self, dimension_words_path, target_word="法治", normalize=False):
+        """
+        加载维度词表、计算相似度并进行可视化
+        """
+        print(f"\n{'='*20}\n分析维度文件: {dimension_words_path}\n{'='*20}")
+        dimension_words = self._load_dimension_words(dimension_words_path)
+        
+        if not dimension_words:
+            print(f"无法加载或维度词表为空: {dimension_words_path}")
+            return
+            
+        print("已加载维度词表:")
+        for dim, words in dimension_words.items():
+            print(f"  {dim}: {len(words)} 个词")
+            
+        similarity_df = self.calculate_dimension_similarities(
+            dimension_words, target_word=target_word, normalize=normalize
+        )
+        
+        if similarity_df.empty:
+            print("计算相似度失败，无法继续分析。")
+            return
+            
+        print(f"\n{len(dimension_words)}维度相似度矩阵:")
+        print(similarity_df)
+        
+        dim_count = len(dimension_words)
+        base_title = f"法治{dim_count}维度"
+        
+        self.plot_dimension_trends(similarity_df.copy(), f"{base_title}语义相似度变化趋势")
+        self.plot_dimension_radar(similarity_df.copy(), f"{base_title}语义结构雷达图")
+        self.plot_dimension_heatmap(similarity_df.copy(), f"{base_title}语义相似度热力图")
+
 
 def main():
     """主函数"""
-    print("=== 法治维度词表聚类扩展分析 ===")
+    print("=== 法治维度语义分析 ===")
     
     # 1. 加载模型
-    models = utils.load_models(MODELS_DIR)
-    
-    # 检查模型是否成功加载
-    if not models:
-        print("没有成功加载任何模型，请检查模型路径")
-        return
-    else:
-        print(f"\n成功加载了 {len(models)} 个模型:")
-        for period_name, model in models.items():
-            print(f"  {period_name}: 词汇量 {len(model.index_to_key)}")
-    
-    # 创建输出目录
-    topic_word_dir = Path("topic_word")
-    topic_word_dir.mkdir(exist_ok=True)
-    
-    # 2. 加载相似词数据
     try:
-        era_files = {
-            'Era1_1978-1996': 'similar_words/Era1_1978-1996_final.txt',
-            'Era2_1997-2013': 'similar_words/Era2_1997-2013_final.txt',
-            'Era3_2014-2024': 'similar_words/Era3_2014-2024_final.txt'
-        }
-        
-        similar_words_by_period = {}
-        for era, file_path in era_files.items():
-            word_list = utils.load_expert_word_list(file_path)
-            if word_list:
-                similar_words_by_period[era] = word_list
-                print(f"加载 {era}: {len(word_list)} 个词")
-    except Exception as e:
-        print(f"加载相似词数据时出错: {e}")
+        models = utils.load_models(MODELS_DIR)
+        analyzer = DimensionAnalyzer(models)
+    except (ValueError, FileNotFoundError) as e:
+        print(f"初始化分析器失败: {e}")
         return
+
+    # 创建输出目录
+    output_dir = PROJECT_ROOT / "output" / "dimension_analysis"
+    output_dir.mkdir(parents=True, exist_ok=True)
     
-    # 7. 加载专家定义的维度词表并进行分析
-    print("\n=== 维度相似度分析 ===")
+    topic_word_dir = PROJECT_ROOT / "topic_word"
     
-    # 加载3维度词表
-    dimension_words_3d = load_dimension_words(topic_word_dir / "dimension_words_3d.txt")
-    if dimension_words_3d:
-        print("已加载3维度词表:")
-        for dim, words in dimension_words_3d.items():
-            print(f"  {dim}: {len(words)} 个词")
-        
-        # 计算相似度
-        similarity_df_3d = calculate_dimension_similarities(models, dimension_words_3d)
-        print("\n3维度相似度矩阵:")
-        print(similarity_df_3d)
-        
-        # 绘制可视化
-        if not similarity_df_3d.empty:
-            plot_dimension_trends(similarity_df_3d, "法治3维度语义相似度变化趋势")
-            plot_dimension_radar(similarity_df_3d, "法治3维度语义结构雷达图")
-            plot_dimension_heatmap(similarity_df_3d, "法治3维度语义相似度热力图")
+    # 2. 分析专家定义的维度词表
+    analyzer.run_analysis(topic_word_dir / "dimension_words_3d.txt")
+    analyzer.run_analysis(topic_word_dir / "dimension_words_4d.txt")
     
-    # 加载4维度词表
-    dimension_words_4d = load_dimension_words(topic_word_dir / "dimension_words_4d.txt")
+    # 3. 扩展4D词表并保存
+    print("\n=== 扩展4D词表 ===")
+    dimension_words_4d = analyzer._load_dimension_words(topic_word_dir / "dimension_words_4d.txt")
     if dimension_words_4d:
-        print("\n已加载4维度词表:")
-        for dim, words in dimension_words_4d.items():
-            print(f"  {dim}: {len(words)} 个词")
+        expanded_4d_words = analyzer.expand_dimension_words_by_similarity(
+            dimension_words_4d, 
+            target_word="法治",
+            similarity_threshold=0.3,
+            max_words_per_dim=50
+        )
         
-        # 计算相似度
-        similarity_df_4d = calculate_dimension_similarities(models, dimension_words_4d)
-        print("\n4维度相似度矩阵:")
-        print(similarity_df_4d)
+        # 保存扩展后的词表
+        expanded_4d_output_path = output_dir / "expanded_dimension_words_4d.txt"
+        analyzer.save_expanded_dimension_words(expanded_4d_words, expanded_4d_output_path)
         
-        # 绘制可视化
-        if not similarity_df_4d.empty:
-            plot_dimension_trends(similarity_df_4d, "法治4维度语义相似度变化趋势")
-            plot_dimension_radar(similarity_df_4d, "法治4维度语义结构雷达图")
-            plot_dimension_heatmap(similarity_df_4d, "法治4维度语义相似度热力图")
-    
+        # (可选) 分析扩展后的词表
+        print("\n=== 分析扩展后的4D词表 ===")
+        analyzer.run_analysis(expanded_4d_output_path)
+
     print("\n=== 分析完成 ===")
 
 if __name__ == "__main__":
