@@ -402,8 +402,8 @@ def main():
     topic_word_dir = PROJECT_ROOT / "topic_word"
     
     # 2. 分析专家定义的维度词表
-    analyzer.run_analysis(topic_word_dir / "dimension_words_3d.txt")
-    analyzer.run_analysis(topic_word_dir / "dimension_words_4d.txt")
+    # analyzer.run_analysis(topic_word_dir / "dimension_words_3d.txt")
+    # analyzer.run_analysis(topic_word_dir / "dimension_words_4d.txt")
     
     # 3. 扩展4D词表并保存
     print("\n=== 扩展4D词表 ===")
@@ -412,8 +412,8 @@ def main():
         expanded_4d_words = analyzer.expand_dimension_words_by_similarity(
             dimension_words_4d, 
             target_word="法治",
-            similarity_threshold=0.3,
-            max_words_per_dim=50
+            similarity_threshold=0.25,
+            max_words_per_dim=100
         )
         
         # 保存扩展后的词表
