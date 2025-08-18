@@ -36,9 +36,24 @@ from data.corpus_manager import CorpusManager # type: ignore
 PRETRAINED_VECTORS_PATH = Path.home() / "gensim-data" / "vectors" / "chinese_vectors.kv" # 预训练词向量路径
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent # 项目根目录
-FINETUNED_MODELS_OUTPUT_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_flexible" # 微调后模型输出目录
-DEBUG_VOCAB_OUTPUT_DIR = PROJECT_ROOT / "models" / "debug_vocabs" # 调试用词汇表输出目录
 
+# --- 输出目录结构说明 ---
+# 脚本会根据配置自动创建以下目录结构：
+# models/
+# ├── fine_tuned_vectors_flexible/
+# │   ├── incremental/           # 增量微调策略
+# │   │   ├── top5000/          # 聚焦微调，TOP_N_COOCCURRING=5000
+# │   │   └── no_focus/         # 非聚焦微调
+# │   └── independent/          # 独立微调策略
+# │       ├── top5000/          # 聚焦微调，TOP_N_COOCCURRING=5000
+# │       └── no_focus/         # 非聚焦微调
+# └── debug_vocabs/
+#     ├── incremental/
+#     │   ├── top5000/
+#     │   └── no_focus/
+#     └── independent/
+#         ├── top5000/
+#         └── no_focus/
 # --- 时期定义 (可自定义此列表) ---
 # 每个字典应包含 "name", "start_year", 和 "end_year"
 PERIODS_TO_FINETUNE = [
@@ -57,7 +72,7 @@ FORCE_CREATE_PERIOD_CORPORA = False # 若为True，即使时期语料已存在�
 
 # --- Word2Vec 微调参数 ---
 # VECTOR_SIZE 将从预训练模型动态获取
-WINDOW_SIZE = 10 # 上下文窗口大小
+WINDOW_SIZE = 50 # 上下文窗口大小
 MIN_COUNT = 5  # 词频阈值：在聚焦微调模式下，这也是聚焦词必须达到的最低频率
 WORKERS = os.cpu_count() - 1 if os.cpu_count() and os.cpu_count() > 1 else 1 # 使用的CPU核心数
 EPOCHS = 10        # 训练轮数
@@ -66,7 +81,24 @@ SG = 1 # 0 表示 CBOW, 1 表示 Skip-gram
 # --- 聚焦微调控制 ---
 FOCUSED_FINETUNING = True  # 是否启用聚焦微调
 FOCUS_WORD = "法治"  # 聚焦词
-TOP_N_COOCCURRING = 5000  # 与聚焦词共现频率最高的N个词
+TOP_N_COOCCURRING = 10000  # 与聚焦词共现频率最高的N个词
+ 
+# 根据微调策略创建不同的输出目录
+if INCREMENTAL_FINETUNING:
+    strategy_suffix = "incremental"
+else:
+    strategy_suffix = "independent"
+
+# 在文件名中添加TOP_N_COOCCURRING参数
+if FOCUSED_FINETUNING:
+    top_n_suffix = f"top{TOP_N_COOCCURRING}"
+else:
+    top_n_suffix = "no_focus"
+
+FINETUNED_MODELS_OUTPUT_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_flexible" / strategy_suffix / top_n_suffix # 微调后模型输出目录
+DEBUG_VOCAB_OUTPUT_DIR = PROJECT_ROOT / "models" / "debug_vocabs" / strategy_suffix / top_n_suffix # 调试用词汇表输出目录
+
+
 
 # --- 日志设置 ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -339,7 +371,10 @@ def main():
         logging.info(f"时期 '{period_name}' 的微调完成。")
 
         # 保存微调后的 KeyedVectors
-        fine_tuned_kv_path = FINETUNED_MODELS_OUTPUT_DIR / f"{period_name}_wordvectors.kv"
+        if FOCUSED_FINETUNING:
+            fine_tuned_kv_path = FINETUNED_MODELS_OUTPUT_DIR / f"{period_name}_wordvectors_top{TOP_N_COOCCURRING}.kv"
+        else:
+            fine_tuned_kv_path = FINETUNED_MODELS_OUTPUT_DIR / f"{period_name}_wordvectors_no_focus.kv"
         model.wv.save(str(fine_tuned_kv_path))
         logging.info(f"时期 '{period_name}' 的微调后 KeyedVectors 已保存到: {fine_tuned_kv_path}")
 
@@ -355,7 +390,10 @@ def main():
     logging.info(f"\n--- 使用关键词测试微调后的模型: {test_keywords} ---")
     for period_config in PERIODS_TO_FINETUNE:
         period_name = period_config["name"]
-        model_path = FINETUNED_MODELS_OUTPUT_DIR / f"{period_name}_wordvectors.kv"
+        if FOCUSED_FINETUNING:
+            model_path = FINETUNED_MODELS_OUTPUT_DIR / f"{period_name}_wordvectors_top{TOP_N_COOCCURRING}.kv"
+        else:
+            model_path = FINETUNED_MODELS_OUTPUT_DIR / f"{period_name}_wordvectors_no_focus.kv"
         if model_path.exists():
             logging.info(f"\n--- 时期: {period_name} 的测试结果 ---")
             try:
