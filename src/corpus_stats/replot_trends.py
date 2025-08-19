@@ -6,6 +6,7 @@
 """
 
 import sys
+import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -35,7 +36,33 @@ def setup_chinese_font():
         plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei']
         plt.rcParams['axes.unicode_minus'] = False
 
-def replot_trends_from_csv(csv_file: Path, output_dir: Path):
+def calculate_moving_average(series: pd.Series, window_length: int, window_gap: int):
+    """
+    计算滑动平均值
+    窗口根据gap进行滑动，而不是逐年滚动
+    """
+    years = series.index
+    start_year = years.min()
+    end_year = years.max()
+    
+    avg_years = []
+    avg_values = []
+    
+    current_year = start_year
+    while current_year + window_length -1 <= end_year:
+        window_end_year = current_year + window_length - 1
+        window_data = series.loc[current_year:window_end_year]
+        
+        avg_values.append(window_data.mean())
+        # 将均值点放在窗口的中心位置
+        avg_years.append(current_year + (window_length - 1) / 2)
+        
+        current_year += window_gap
+        
+    return pd.Series(avg_values, index=avg_years)
+
+
+def replot_trends_from_csv(csv_file: Path, output_dir: Path, plot_moving_average: bool, window_length: int, window_gap: int):
     """
     从CSV文件读取数据并重新绘制趋势图
 
@@ -67,12 +94,29 @@ def replot_trends_from_csv(csv_file: Path, output_dir: Path):
     # 创建图表
     plt.figure(figsize=(16, 9))
 
-    # 绘制曲线
-    plt.plot(years, fazi_data, color='#1f77b4', marker='o', linewidth=2.5, markersize=7, label='法制')
-    plt.plot(years, fazhi_data, color='#ff7f0e', marker='s', linewidth=2.5, markersize=7, label='法治')
+    # 绘制原始曲线
+    plt.plot(years, fazi_data, color='#1f77b4', marker='o', linestyle='-', linewidth=1.0, markersize=5, label='法制 (年度)', alpha=0.6)
+    plt.plot(years, fazhi_data, color='#ff7f0e', marker='s', linestyle='-', linewidth=1.0, markersize=5, label='法治 (年度)', alpha=0.6)
+
+    # 如果启用了滑动平均，则计算并绘制
+    if plot_moving_average:
+        fazi_ma = calculate_moving_average(fazi_data, window_length, window_gap)
+        fazhi_ma = calculate_moving_average(fazhi_data, window_length, window_gap)
+        
+        plt.plot(fazi_ma.index, fazi_ma, color='#1f77b4', linestyle='--', linewidth=3, label=f'法制 ({window_length}年滑动平均)')
+        plt.plot(fazhi_ma.index, fazhi_ma, color='#ff7f0e', linestyle='--', linewidth=3, label=f'法治 ({window_length}年滑动平均)')
+        
+        # 为滑动平均曲线添加数据点
+        for year, val in fazi_ma.items():
+            plt.annotate(f'{val:.1f}', (year, val),
+                       textcoords="offset points", xytext=(0,10), ha='center', fontsize=10, fontweight='bold', color='#1f77b4')
+        for year, val in fazhi_ma.items():
+            plt.annotate(f'{val:.1f}', (year, val),
+                       textcoords="offset points", xytext=(0,10), ha='center', fontsize=10, fontweight='bold', color='#ff7f0e')
+
 
     # 设置图表属性
-    plt.title('"法制"与"法治"词频年度变化趋势 (每百万词)', fontsize=30, fontweight='bold', pad=20)
+    plt.title('"法制"与"法治"词频年度变化趋势 (每百万词)', fontsize=20, fontweight='bold', pad=20)
     plt.xlabel('年份', fontsize=24)
     plt.ylabel('每百万词出现次数', fontsize=24)
     plt.legend(fontsize=34, loc='upper left')
@@ -82,20 +126,27 @@ def replot_trends_from_csv(csv_file: Path, output_dir: Path):
     plt.xticks(years[::2], rotation=45, fontsize=12) # 每隔两年显示
     plt.yticks(fontsize=12)
     
-    # 添加数据标签
-    # for i, year in enumerate(years):
-    #     if fazi_data.iloc[i] > 0:
-    #         plt.annotate(f'{fazi_data.iloc[i]:.1f}', (year, fazi_data.iloc[i]),
-    #                    textcoords="offset points", xytext=(0,10), ha='center', fontsize=9)
-    #     if fazhi_data.iloc[i] > 0:
-    #         plt.annotate(f'{fazhi_data.iloc[i]:.1f}', (year, fazhi_data.iloc[i]),
-    #                    textcoords="offset points", xytext=(0,10), ha='center', fontsize=9)
+    # 原始数据的标签只在非滑动平均模式下显示，避免图表过于拥挤
+    if not plot_moving_average:
+        for i, year in enumerate(years):
+            if fazi_data.iloc[i] > 0:
+                plt.annotate(f'{fazi_data.iloc[i]:.1f}', (year, fazi_data.iloc[i]),
+                           textcoords="offset points", xytext=(0,10), ha='center', fontsize=9)
+            if fazhi_data.iloc[i] > 0:
+                plt.annotate(f'{fazhi_data.iloc[i]:.1f}', (year, fazhi_data.iloc[i]),
+                           textcoords="offset points", xytext=(0,10), ha='center', fontsize=9)
 
     plt.tight_layout()
 
     # 保存图片
     output_dir.mkdir(parents=True, exist_ok=True)
-    img_file = output_dir / "法制法治词频趋势图_replot.png"
+    
+    if plot_moving_average:
+        filename = f"法制法治词频趋势图_MA_len{window_length}_gap{window_gap}.png"
+    else:
+        filename = "法制法治词频趋势图_replot.png"
+        
+    img_file = output_dir / filename
     plt.savefig(img_file, dpi=300, bbox_inches='tight')
     print(f"新的趋势图已保存到: {img_file}")
 
@@ -104,7 +155,16 @@ def replot_trends_from_csv(csv_file: Path, output_dir: Path):
 
 def main():
     """主函数"""
-    print("开始重新绘制词频趋势图...")
+    parser = argparse.ArgumentParser(description='重新绘制“法制”与“法治”词频趋势图，并可选择添加滑动平均线。')
+    parser.add_argument('--moving-average', action='store_true', help='启用滑动平均计算和绘图')
+    parser.add_argument('--window-length', type=int, default=10, help='滑动平均的窗口长度 (年)')
+    parser.add_argument('--window-gap', type=int, default=5, help='滑动平均的窗口滑动步长 (年)')
+    args = parser.parse_args()
+
+    if args.moving_average:
+        print(f"开始重新绘制词频趋势图 (滑动平均模式: 窗口长度={args.window_length}, 步长={args.window_gap})...")
+    else:
+        print("开始重新绘制词频趋势图 (年度数据模式)...")
     
     # 设置字体
     setup_chinese_font()
@@ -115,7 +175,7 @@ def main():
     output_dir = project_root / "output"
     
     # 重新绘图
-    replot_trends_from_csv(csv_file, output_dir)
+    replot_trends_from_csv(csv_file, output_dir, args.moving_average, args.window_length, args.window_gap)
     
     print("\n绘图完成！")
 
