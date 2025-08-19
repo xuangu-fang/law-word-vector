@@ -2,7 +2,7 @@
 
 # 输入文件路径
 input_file:
-  path: "similar_words/from_zhu/law_similarity_classified.xlsx"
+  path: "similar_words/from_zhu/law_similarity_classified_8_19.xlsx"
   sheet_name: "法制era1"
   column_name: "word" # 词语所在的列名
 
@@ -14,10 +14,10 @@ tag_definitions_path: "topic_word/tag_define/legal_tags.json"
 # 请选择以下一个模型路径使用。取消注释你想要使用的那一个，并注释掉另一个。
 
 # 选项 A: 项目内微调模型 (Fine-tuned Model)
-# word_vector_model_path: "models/fine_tuned_vectors_flexible/Era1_1978-1996_wordvectors.kv"
+word_vector_model_path: "models/fine_tuned_vectors_flexible/Era1_1978-1996_wordvectors.kv"
 
 # 选项 B: 通用预训练模型 (General Pre-trained Model)
-word_vector_model_path: "/data/userdata/fangshikai/gensim-data/vectors/chinese_vectors.kv"
+# word_vector_model_path: "/data/userdata/fangshikai/gensim-data/vectors/chinese_vectors.kv"
 
 
 # 输出文件配置

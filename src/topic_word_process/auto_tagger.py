@@ -82,7 +82,18 @@ class AutoTaggerApp:
             input_conf['path'], 
             sheet_name=input_conf['sheet_name']
         )
-        return df[[input_conf['column_name']]].rename(columns={input_conf['column_name']: 'word'})
+        
+        word_col = input_conf['column_name']
+        columns_to_keep = [word_col]
+        
+        # 检查 "similarity" 列是否存在，如果存在则一并读取
+        if 'similarity' in df.columns:
+            columns_to_keep.append('similarity')
+            print("Found 'similarity' column, it will be included in the output.")
+        else:
+            print("Warning: 'similarity' column not found in the input file. It will not be included.")
+            
+        return df[columns_to_keep].rename(columns={word_col: 'word'})
 
     def load_tag_definitions(self) -> Dict[str, List[str]]:
         path = self.config['tag_definitions_path']

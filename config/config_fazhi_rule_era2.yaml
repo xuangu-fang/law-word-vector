@@ -1,0 +1,12 @@
+# 配置文件 for: 法治era2
+input_file:
+  path: "similar_words/from_zhu/law_similarity_classified_8_19.xlsx"
+  sheet_name: "法治era2"
+  column_name: "word"
+tag_definitions_path: "topic_word/tag_define/legal_tags.json"
+word_vector_model_path: "models/fine_tuned_vectors_flexible/Era2_1997-2013_wordvectors.kv"
+output_file:
+  directory: "topic_word"
+  filename_prefix: "tagged_法治era2"
+  formats: ["csv", "xlsx"]
+tagging_strategy: "similarity" 

@@ -24,13 +24,15 @@ from gensim.models.callbacks import CallbackAny2Vec
 from gensim.utils import RULE_DISCARD, RULE_KEEP
 import tqdm
 
-# --- 调整 sys.path 以便从兄弟目录导入 CorpusManager ---
-SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_SRC_DIR = SCRIPT_DIR.parent
-DATA_MODULE_DIR = PROJECT_SRC_DIR / "data"
-sys.path.append(str(PROJECT_SRC_DIR))
+# --- 动态调整 sys.path 以支持从项目根目录导入 ---
+# 获取脚本当前文件路径 -> finetune...py
+# .parent -> models
+# .parent -> src
+# .parent -> law-word-vector (项目根目录)
+PROJECT_ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(PROJECT_ROOT_DIR))
 
-from data.corpus_manager import CorpusManager # type: ignore
+from src.corpus_process.corpus_manager import CorpusManager
 
 # --- 配置信息 ---
 PRETRAINED_VECTORS_PATH = Path.home() / "gensim-data" / "vectors" / "chinese_vectors.kv" # 预训练词向量路径
@@ -67,7 +69,7 @@ PERIODS_TO_FINETUNE = [
 ]
 
 # --- 微调策略 ---
-INCREMENTAL_FINETUNING = False # 若为True，时期N的模型将作为时期N+1的基础模型进行增量微调
+INCREMENTAL_FINETUNING = True # 若为True，时期N的模型将作为时期N+1的基础模型进行增量微调
 FORCE_CREATE_PERIOD_CORPORA = False # 若为True，即使时期语料已存在也将重新创建
 
 # --- Word2Vec 微调参数 ---
