@@ -1,4 +1,4 @@
 ---
 alwaysApply: true
 ---
-always run code in the conda env: law_word_vector, be sure to activate it before running
+我们已经安装了 conda env: law_word_vector, 请确保激活并在这里面运行代码
