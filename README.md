@@ -1,34 +1,27 @@
 # law-word-vector
 
-project prosose:
+法律语言学词向量分析项目
 
-## 目的
-  具体来说，我想通过研究 不同时期的社会文献（比如80年代 和 90年代）中，特定词语（比如“法制”）的词嵌入 变化，最紧密关联词的变化等，来研究特定词语的 概念变迁。
+本项目基于人民日报语料库，通过词向量技术分析法律概念的语义演变，特别关注"法治"与"法制"概念的历史发展轨迹。
 
-## 技术步骤
-  1. 获取不同时期的社会文献:
-      - 人民日报
-      - 政府工作报告
-      - 裁判文书
+## 项目环境
+
+**重要提示：** 请确保激活并使用 conda 环境 `law_word_vector` 运行所有代码。
 
 
-  2. 对社会文献进行预处理:
-      - unzip
-      - 分词，除停用词、标点符号等
-      - list of words of interest (手动列出/自动列出)
-
-  3. 下载静态的中文词向量预训练模型，
-
-  4. 在不同语料集上进行词向量微调
-  - 或者采用其他动态词向量的分析方法
-  
-  5. 对词向量进行分析，比如计算特定词语的词嵌入变化，最紧密关联词的变化等
-
-  6. 对分析结果进行可视化，比如使用matplotlib、seaborn等
-
-  
-  ## to-do list:
-  - make a requirements.txt, and install all the dependencies
-  - process the data
-  - define a project structure, include data-class, model-class, analysis-class
-  - start from simple case, like a notebook
+## 目前主要结果：
+1. 法治-法制 的词频变化: [link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/rule_by-of_law_freq/%E6%B3%95%E5%88%B6%E6%B3%95%E6%B2%BB%E8%AF%8D%E9%A2%91%E8%B6%8B%E5%8A%BF%E5%9B%BE_MA_len10_gap5.png)
+2. 法治-法制 的相似度变化: 
+  - 10年滑动窗口：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/rule_by-of_law_sim/%E6%B3%95%E5%88%B6_%E6%B3%95%E6%B2%BB_similarity_trend_Year1978-2024_10_5.png)
+  - 三个时期：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/rule_by-of_law_sim/%E6%B3%95%E5%88%B6_%E6%B3%95%E6%B2%BB_similarity_trend_fine_tuned_vectors_flexible.png)
+3. 法治-法制 的 正负指数变化:
+  - 发展-约束-柱状图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/rule_by-of_law_index/combined/similarity_bar_chart_combined.png)
+  - 语义动态指数（ 发展指数 减去 约束指数 ）趋势图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/rule_by-of_law_index/combined/semantic_dynamism_trend_chart_combined.png)
+4. 法律功能-4维度 分析：
+  - 热力图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/law-function/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/heatmap.png)
+  - 雷达图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/law-function/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/radar_chart.png)
+  - 趋势图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/law-function/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/trend_chart.png)
+5. 立法过程-4维度 分析：
+  - 热力图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/legal_process/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/heatmap.png)
+  - 雷达图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/legal_process/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/radar_chart.png)
+  - 趋势图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/legal_process/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/trend_chart.png)
