@@ -1,0 +1,182 @@
+{
+  "法治": {
+    "era1": {
+      "label_1": {
+        "avg_similarity": 0.2459227591753006,
+        "word_count": 30
+      },
+      "label_2": {
+        "avg_similarity": 0.17883872985839844,
+        "word_count": 23
+      },
+      "gap_index": -0.06708402931690216
+    },
+    "era2": {
+      "label_1": {
+        "avg_similarity": 0.2076604962348938,
+        "word_count": 44
+      },
+      "label_2": {
+        "avg_similarity": 0.1707753986120224,
+        "word_count": 40
+      },
+      "gap_index": -0.0368850976228714
+    },
+    "era3": {
+      "label_1": {
+        "avg_similarity": 0.24214477837085724,
+        "word_count": 43
+      },
+      "label_2": {
+        "avg_similarity": 0.23421670496463776,
+        "word_count": 29
+      },
+      "gap_index": -0.007928073406219482
+    },
+    "era4": {
+      "label_1": {
+        "avg_similarity": 0.2640998959541321,
+        "word_count": 43
+      },
+      "label_2": {
+        "avg_similarity": 0.28355762362480164,
+        "word_count": 29
+      },
+      "gap_index": 0.019457727670669556
+    },
+    "era5": {
+      "label_1": {
+        "avg_similarity": 0.2608923614025116,
+        "word_count": 43
+      },
+      "label_2": {
+        "avg_similarity": 0.3277463912963867,
+        "word_count": 29
+      },
+      "gap_index": 0.06685402989387512
+    },
+    "era6": {
+      "label_1": {
+        "avg_similarity": 0.27058711647987366,
+        "word_count": 43
+      },
+      "label_2": {
+        "avg_similarity": 0.3533674478530884,
+        "word_count": 29
+      },
+      "gap_index": 0.08278033137321472
+    },
+    "era7": {
+      "label_1": {
+        "avg_similarity": 0.27666938304901123,
+        "word_count": 32
+      },
+      "label_2": {
+        "avg_similarity": 0.3398018181324005,
+        "word_count": 22
+      },
+      "gap_index": 0.06313243508338928
+    },
+    "era8": {
+      "label_1": {
+        "avg_similarity": 0.2839354872703552,
+        "word_count": 32
+      },
+      "label_2": {
+        "avg_similarity": 0.30925601720809937,
+        "word_count": 22
+      },
+      "gap_index": 0.02532052993774414
+    }
+  },
+  "法制": {
+    "era1": {
+      "label_1": {
+        "avg_similarity": 0.3488194942474365,
+        "word_count": 30
+      },
+      "label_2": {
+        "avg_similarity": 0.3086279034614563,
+        "word_count": 23
+      },
+      "gap_index": -0.040191590785980225
+    },
+    "era2": {
+      "label_1": {
+        "avg_similarity": 0.3464272916316986,
+        "word_count": 44
+      },
+      "label_2": {
+        "avg_similarity": 0.33775585889816284,
+        "word_count": 40
+      },
+      "gap_index": -0.008671432733535767
+    },
+    "era3": {
+      "label_1": {
+        "avg_similarity": 0.3170563280582428,
+        "word_count": 43
+      },
+      "label_2": {
+        "avg_similarity": 0.31214308738708496,
+        "word_count": 29
+      },
+      "gap_index": -0.004913240671157837
+    },
+    "era4": {
+      "label_1": {
+        "avg_similarity": 0.2821190655231476,
+        "word_count": 43
+      },
+      "label_2": {
+        "avg_similarity": 0.30087193846702576,
+        "word_count": 29
+      },
+      "gap_index": 0.018752872943878174
+    },
+    "era5": {
+      "label_1": {
+        "avg_similarity": 0.28172969818115234,
+        "word_count": 43
+      },
+      "label_2": {
+        "avg_similarity": 0.285087913274765,
+        "word_count": 29
+      },
+      "gap_index": 0.003358215093612671
+    },
+    "era6": {
+      "label_1": {
+        "avg_similarity": 0.28609147667884827,
+        "word_count": 43
+      },
+      "label_2": {
+        "avg_similarity": 0.3002559542655945,
+        "word_count": 29
+      },
+      "gap_index": 0.014164477586746216
+    },
+    "era7": {
+      "label_1": {
+        "avg_similarity": 0.2659206688404083,
+        "word_count": 32
+      },
+      "label_2": {
+        "avg_similarity": 0.29378950595855713,
+        "word_count": 22
+      },
+      "gap_index": 0.027868837118148804
+    },
+    "era8": {
+      "label_1": {
+        "avg_similarity": 0.26001691818237305,
+        "word_count": 32
+      },
+      "label_2": {
+        "avg_similarity": 0.27628093957901,
+        "word_count": 22
+      },
+      "gap_index": 0.016264021396636963
+    }
+  }
+}

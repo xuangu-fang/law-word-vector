@@ -1,0 +1,72 @@
+{
+  "法治": {
+    "era1": {
+      "label_1": {
+        "avg_similarity": 0.2685125470161438,
+        "word_count": 15
+      },
+      "label_2": {
+        "avg_similarity": 0.1918981522321701,
+        "word_count": 12
+      },
+      "gap_index": -0.0766143947839737
+    },
+    "era2": {
+      "label_1": {
+        "avg_similarity": 0.28409093618392944,
+        "word_count": 26
+      },
+      "label_2": {
+        "avg_similarity": 0.35146117210388184,
+        "word_count": 24
+      },
+      "gap_index": 0.06737023591995239
+    },
+    "era3": {
+      "label_1": {
+        "avg_similarity": 0.26301309466362,
+        "word_count": 29
+      },
+      "label_2": {
+        "avg_similarity": 0.28456079959869385,
+        "word_count": 21
+      },
+      "gap_index": 0.021547704935073853
+    }
+  },
+  "法制": {
+    "era1": {
+      "label_1": {
+        "avg_similarity": 0.3553934097290039,
+        "word_count": 24
+      },
+      "label_2": {
+        "avg_similarity": 0.3988482356071472,
+        "word_count": 14
+      },
+      "gap_index": 0.04345482587814331
+    },
+    "era2": {
+      "label_1": {
+        "avg_similarity": 0.30760160088539124,
+        "word_count": 23
+      },
+      "label_2": {
+        "avg_similarity": 0.3107436001300812,
+        "word_count": 19
+      },
+      "gap_index": 0.0031419992446899414
+    },
+    "era3": {
+      "label_1": {
+        "avg_similarity": 0.23690439760684967,
+        "word_count": 30
+      },
+      "label_2": {
+        "avg_similarity": 0.23622767627239227,
+        "word_count": 20
+      },
+      "gap_index": -0.0006767213344573975
+    }
+  }
+}
