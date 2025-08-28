@@ -231,7 +231,7 @@ class DomainAnalyzer:
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
         angles += angles[:1]
 
-        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+        fig, ax = plt.subplots(figsize=(12, 8), subplot_kw=dict(polar=True))
 
         for i, row in df.iterrows():
             data = row.drop('era').tolist()
