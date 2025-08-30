@@ -377,9 +377,9 @@ if __name__ == '__main__':
             'era3': '法治'
         }
         print("\n🔄 混合模式: era1-法制, era2-[法制+法治], era3-法治")
-        analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize='same_era')
+        # analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize='same_era')
         # print("\n🔄 混合模式: era1-党政建设, era2-[党政建设+党建政治], era3-党建政治")
-        # analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize=None)
+        analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize=None)
         
         print("\n🎉 法律领域分析完成！")
 

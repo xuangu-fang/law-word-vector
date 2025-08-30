@@ -368,13 +368,13 @@ if __name__ == '__main__':
         # 测试不同的era-keyword组合
         
         # 1. 基础设置: era1-法制, era2-法治, era3-法治
-        basic_keywords = {
-            'era1': '法制',
-            'era2': '法治',
-            'era3': '法治'
-        }
-        print("\n📈 基础设置: era1-法制, era2-法治, era3-法治")
-        analyzer.run_analysis(basic_keywords, use_general_union=True, normalize='same_era')
+        # basic_keywords = {
+        #     'era1': '法制',
+        #     'era2': '法治',
+        #     'era3': '法治'
+        # }
+        # print("\n📈 基础设置: era1-法制, era2-法治, era3-法治")
+        # analyzer.run_analysis(basic_keywords, use_general_union=True, normalize='same_era')
         
         # 2. 混合模式: era1-法制, era2-[法制+法治], era3-法治
         mixed_keywords = {

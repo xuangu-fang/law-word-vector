@@ -74,6 +74,19 @@ class LegalProcessAnalyzer:
 
     def _create_general_union_wordset(self):
         """创建跨关键词+跨时期的完全并集词包"""
+        try:
+            # 直接读取现有的JSON文件
+            general_union_path = self.output_dir / "general_union_wordset_legal_process.json"
+            with open(general_union_path, 'r', encoding='utf-8') as f:
+                result = json.load(f)
+            
+            print(f"General Union Wordset 统计 (从文件读取):")
+            for topic, words in result.items():
+                print(f"  {topic}: {len(words)} 个词")
+            
+            return result
+        except FileNotFoundError:
+            print("警告: 未找到general_union_wordset_legal_process.json文件，将创建新的")
         general_union = {}
         
         # 遍历所有关键词（法治、法制等）
@@ -367,14 +380,7 @@ if __name__ == '__main__':
         
         # 测试不同的era-keyword组合
         
-        # 1. 基础设置: era1-法制, era2-法治, era3-法治
-        basic_keywords = {
-            'era1': '法制',
-            'era2': '法治',
-            'era3': '法治'
-        }
-        print("\n--- 基础设置: era1-法制, era2-法治, era3-法治 ---")
-        analyzer.run_analysis(basic_keywords, use_general_union=True, normalize='same_era')
+
         
         # 2. 混合模式: era1-法制, era2-[法制+法治], era3-法治
         mixed_keywords = {
@@ -384,24 +390,9 @@ if __name__ == '__main__':
         }
         print("\n--- 混合模式: era1-法制, era2-[法制+法治], era3-法治 ---")
         analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize='same_era')
+        # analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize="none")
         
-        # 3. 全法制模式
-        fazhi_keywords = {
-            'era1': '法制',
-            'era2': '法制',
-            'era3': '法制'
-        }
-        print("\n--- 全法制模式 ---")
-        analyzer.run_analysis(fazhi_keywords, use_general_union=True, normalize='same_era')
-        
-        # 4. 全法治模式
-        fazheng_keywords = {
-            'era1': '法治',
-            'era2': '法治',
-            'era3': '法治'
-        }
-        print("\n🏛️ 全法治模式")
-        analyzer.run_analysis(fazheng_keywords, use_general_union=True, normalize='same_era')
+
         
         print("\n🎉 法律流程分析完成！")
 
