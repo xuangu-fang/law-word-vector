@@ -292,7 +292,7 @@ class DomainAnalyzer:
         ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
         ax.set_yticklabels(ax.get_yticklabels(), fontsize=20)
         # plt.title(title)
-        # plt.xlabel("时期", fontsize=24)
+        plt.xlabel("")
         # plt.ylabel("类别", fontsize=24)
         plt.tight_layout()
         plt.savefig(path / "heatmap.png", dpi=300)
