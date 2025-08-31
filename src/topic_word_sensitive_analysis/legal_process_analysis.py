@@ -2,16 +2,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Topic Analysis - 领域分析器
+Topic Analysis - 法律流程分析器
 
 功能：
-1. 分析"政治、经济、社会治理、生态、科技"五个领域维度  
-2. 计算"法治"/"法制"与各领域的相似度
+1. 分析"立法、司法、执法、守法"四个法律流程维度  
+2. 计算"法治"/"法制"与各维度的相似度
 3. 支持多种era-keyword组合和归一化模式
 4. 生成雷达图、趋势图、热力图
 5. 使用General Union模式确保词包一致性
 
-输出目录：output/topic_analysis/domain/
+输出目录：output/topic_analysis/legal_process/
 """
 
 import os
@@ -38,17 +38,11 @@ import matplotlib
 matplotlib.use('Agg')
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_flexible" 
+MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_sliding_window" / "Year1978-2024_10_5"
+OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis" / "legal_process"
+DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis" / "legal_process" / "topic_word_sets_legal_process.json"
 
-# OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "inner_value" 
-# DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "inner_value" / "incremental" / "top10000" / "general_union_wordset_inner_value.json"
-
-
-# MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_flexible"
-OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis" / "inner_value"
-DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis" / "inner_value" / "general_union_wordset_inner_value.json"
-
-class DomainAnalyzer:
+class LegalProcessAnalyzer:
     def __init__(self, models):
         if not models:
             raise ValueError("No models provided.")
@@ -68,17 +62,21 @@ class DomainAnalyzer:
             return self.general_union_wordset
         elif use_union:
             # 仅跨时期的并集（针对特定关键词）
-            # 对于领域分析，直接返回现有词包
-            return self.topic_word_sets
+            all_words = {}
+            for era_data in self.topic_word_sets.get(keyword, {}).values():
+                for topic, words in era_data.items():
+                    if topic not in all_words:
+                        all_words[topic] = set()
+                    all_words[topic].update(words)
+            return {topic: list(words) for topic, words in all_words.items()}
         
-        # 对于领域分析，直接返回现有词包
-        return self.topic_word_sets
+        return self.topic_word_sets.get(keyword, {}).get(era, {})
 
     def _create_general_union_wordset(self):
-        """直接读取现有的general union wordset"""
+        """创建跨关键词+跨时期的完全并集词包"""
         try:
             # 直接读取现有的JSON文件
-            general_union_path = self.output_dir / "general_union_wordset_inner_value.json"
+            general_union_path = self.output_dir / "general_union_wordset_legal_process.json"
             with open(general_union_path, 'r', encoding='utf-8') as f:
                 result = json.load(f)
             
@@ -88,33 +86,33 @@ class DomainAnalyzer:
             
             return result
         except FileNotFoundError:
-            print("警告: 未找到general_union_wordset_inner_value.json文件，将创建新的")
-            # 如果文件不存在，则创建新的
-            general_union = {}
-            
-            # 遍历所有关键词（法治、法制等）
-            for keyword, keyword_data in self.topic_word_sets.items():
-                # 遍历所有时期
-                for era, era_data in keyword_data.items():
-                    # 遍历所有topic
-                    for topic, words in era_data.items():
-                        if topic not in general_union:
-                            general_union[topic] = set()
-                        general_union[topic].update(words)
-            
-            # 转换为list并排序
-            result = {topic: sorted(list(word_set)) for topic, word_set in general_union.items()}
-            
-            print(f"General Union Wordset 统计 (新创建):")
-            for topic, words in result.items():
-                print(f"  {topic}: {len(words)} 个词")
-            
-            # 保存到JSON文件
-            with open(general_union_path, 'w', encoding='utf-8') as f:
-                json.dump(result, f, ensure_ascii=False, indent=2)
-            print(f"General Union Wordset 已保存到: {general_union_path}")
-            
-            return result
+            print("警告: 未找到general_union_wordset_legal_process.json文件，将创建新的")
+        general_union = {}
+        
+        # 遍历所有关键词（法治、法制等）
+        for keyword, keyword_data in self.topic_word_sets.items():
+            # 遍历所有时期
+            for era, era_data in keyword_data.items():
+                # 遍历所有topic
+                for topic, words in era_data.items():
+                    if topic not in general_union:
+                        general_union[topic] = set()
+                    general_union[topic].update(words)
+        
+        # 转换为list并排序
+        result = {topic: sorted(list(word_set)) for topic, word_set in general_union.items()}
+        
+        print(f"General Union Wordset 统计:")
+        for topic, words in result.items():
+            print(f"  {topic}: {len(words)} 个词")
+        
+        # 保存到JSON文件
+        general_union_path = self.output_dir / "general_union_wordset_legal_process.json"
+        with open(general_union_path, 'w', encoding='utf-8') as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+        print(f"General Union Wordset 已保存到: {general_union_path}")
+        
+        return result
 
     def calculate_similarities(self, era_keyword_map, use_union=False, use_general_union=False, normalize=None):
         """
@@ -138,8 +136,12 @@ class DomainAnalyzer:
         similarity_data = []
         eras = sorted(era_keyword_map.keys())
         
-        # 获取所有可能的topics（应该是：政治、经济、社会治理、生态、科技）
-        all_topics = sorted(list(self.topic_word_sets.keys()))
+        # 获取所有可能的topics（应该是：发展、秩序、规范、权力限制）
+        all_topics = set()
+        for keyword_data in self.topic_word_sets.values():
+            for era_data in keyword_data.values():
+                all_topics.update(era_data.keys())
+        all_topics = sorted(list(all_topics))
         
         print(f"发现的topics: {all_topics}")
 
@@ -256,15 +258,26 @@ class DomainAnalyzer:
     def plot_trend(self, df, path, title):
         """Generates and saves a trend plot."""
         plt.figure(figsize=(12, 7))
-        custom_xticklabels = ["1978-1996", "1997-2013", "2014-2024"]
+        # 动态x轴标签，兼容8个滑动窗口
+        era_label_map = {
+            'era1': '1978-1988',
+            'era2': '1983-1993',
+            'era3': '1988-1998',
+            'era4': '1993-2003',
+            'era5': '1998-2008',
+            'era6': '2003-2013',
+            'era7': '2008-2018',
+            'era8': '2013-2024'
+        }
+        eras_in_df = list(df['era']) if 'era' in df.columns else []
+        custom_xticklabels = [era_label_map.get(e, e) for e in eras_in_df]
         for column in df.columns[1:]:
-            sns.lineplot(data=df, x='era', y=column, marker='o', label=column, linewidth=4, markersize=10)
-        # plt.title(title)
-        plt.ylabel("维度得分（按时期归一化）", fontsize=22)
-        plt.xlabel("时期", fontsize=22)
-        plt.legend(fontsize=20)
-        plt.xticks(ticks=range(len(custom_xticklabels)), labels=custom_xticklabels, fontsize=20)
-        plt.yticks(fontsize=20)
+            sns.lineplot(data=df, x='era', y=column, marker='o', label=column)
+        plt.title(title)
+        plt.ylabel("Similarity")
+        plt.xlabel("Era")
+        plt.legend(title="Topic")
+        plt.xticks(ticks=range(len(custom_xticklabels)), labels=custom_xticklabels)
         plt.tight_layout()
         plt.savefig(path / "trend_chart.png", dpi=300)
         plt.close()
@@ -274,10 +287,35 @@ class DomainAnalyzer:
         # 转置数据，使era在x轴，topics在y轴
         df_transposed = df.set_index('era').T
         plt.figure(figsize=(10, 8))
-        sns.heatmap(df_transposed, annot=True, fmt=".3f", cmap="RdBu_r")
-        plt.title(title)
-        plt.xlabel("Era (时期)")
-        plt.ylabel("Topic (维度)")
+        # 根据era动态生成x轴标签，兼容8个滑动窗口
+        era_label_map = {
+            'era1': '1978-1988',
+            'era2': '1983-1993',
+            'era3': '1988-1998',
+            'era4': '1993-2003',
+            'era5': '1998-2008',
+            'era6': '2003-2013',
+            'era7': '2008-2018',
+            'era8': '2013-2024'
+        }
+        custom_xticklabels = [era_label_map.get(col, col) for col in df_transposed.columns]
+        custom_yticklabels = [ "司法", "守法","执法","立法"]  # 根据实际topic数量自定义
+
+        ax = sns.heatmap(
+            df_transposed,
+            annot=True,
+            fmt=".3f",
+            cmap="viridis",
+            xticklabels=custom_xticklabels,
+            yticklabels=custom_yticklabels,
+            annot_kws={"fontsize": 20}  # 设置热力图数字的字体大小
+        )
+        # 设置x轴和y轴label的字体大小
+        ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=25)
+        # plt.title(title)
+        plt.xlabel("时期", fontsize=24)
+        plt.ylabel("类别", fontsize=24)
         plt.tight_layout()
         plt.savefig(path / "heatmap.png", dpi=300)
         plt.close()
@@ -345,9 +383,14 @@ def load_models():
     """Loads word vector models for each era."""
     models = {}
     model_files = {
-        'era1': 'Era1_1978-1996_wordvectors.kv',
-        'era2': 'Era2_1997-2013_wordvectors.kv',
-        'era3': 'Era3_2014-2024_wordvectors.kv'
+        'era1': 'Era1_1978-1988_wordvectors.kv',
+        'era2': 'Era2_1983-1993_wordvectors.kv',
+        'era3': 'Era3_1988-1998_wordvectors.kv',
+        'era4': 'Era4_1993-2003_wordvectors.kv',
+        'era5': 'Era5_1998-2008_wordvectors.kv',
+        'era6': 'Era6_2003-2013_wordvectors.kv',
+        'era7': 'Era7_2008-2018_wordvectors.kv',
+        'era8': 'Era8_2013-2024_wordvectors.kv'
     }
     for era, filename in model_files.items():
         try:
@@ -370,27 +413,40 @@ if __name__ == '__main__':
         print(f"成功加载了 {len(models)} 个模型: {list(models.keys())}")
             
         print("初始化分析器...")
-        analyzer = DomainAnalyzer(models)
+        analyzer = LegalProcessAnalyzer(models)
         
         print("数据加载成功，开始分析...")
 
         print("\n" + "="*80)
-        print("🏛️ 法律领域分析: 政治，经济，社会治理，生态，科技")
-        print("📊 使用 General Union + Same Era 归一化")
+        print("⚖️ 法律流程分析: 立法、司法、执法、守法")
+        print("📊 默认使用 General Union + Same Era 归一化")
         print("="*80)
         
-        # 混合模式: era1-法制, era2-[法制+法治], era3-法治
-        mixed_keywords = {
-            'era1': '法制',
-            'era2': ['法制', '法治'],
-            'era3': '法治'
-        }
-        print("\n🔄 混合模式: era1-法制, era2-[法制+法治], era3-法治")
-        analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize='same_era')
-        # print("\n🔄 混合模式: era1-党政建设, era2-[党政建设+党建政治], era3-党建政治")
-        # analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize=None)
+        # 测试不同的era-keyword组合
         
-        print("\n🎉 法律领域分析完成！")
+
+        
+        # 8个时期关键词映射：
+        #  - 1978-1996：使用“法制”
+        #  - 1997-2013：使用混合[“法制”, “法治”]
+        #  - 2014-2024：使用“法治”
+        keywords_8_eras = {
+            'era1': '法制',                   # 1978-1988 → 78-96
+            'era2': '法制',                   # 1983-1993 → 78-96
+            'era3': ['法制', '法治'],         # 1988-1998 → 97-2013（混合）
+            'era4': ['法制', '法治'],         # 1993-2003 → 97-2013（混合）
+            'era5': ['法制', '法治'],         # 1998-2008 → 97-2013（混合）
+            'era6': ['法制', '法治'],         # 2003-2013 → 97-2013（混合）
+            'era7': '法治',                   # 2008-2018 → 14-24
+            'era8': '法治'                    # 2013-2024 → 14-24
+        }
+        print("\n--- 使用8个时期（1978-1988 到 2013-2024）：78-96用‘法制’，97-2013用混合，14-24用‘法治’ ---")
+        analyzer.run_analysis(keywords_8_eras, use_general_union=True, normalize='same_era')
+        # analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize="none")
+        
+
+        
+        print("\n🎉 法律流程分析完成！")
 
     except Exception as e:
         import traceback

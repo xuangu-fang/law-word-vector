@@ -11,7 +11,7 @@ Topic Analysis - 领域分析器
 4. 生成雷达图、趋势图、热力图
 5. 使用General Union模式确保词包一致性
 
-输出目录：output/topic_analysis/domain/
+输出目录：output/topic_analysis/combine_domain/
 """
 
 import os
@@ -38,15 +38,9 @@ import matplotlib
 matplotlib.use('Agg')
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_flexible" 
-
-# OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "inner_value" 
-# DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "inner_value" / "incremental" / "top10000" / "general_union_wordset_inner_value.json"
-
-
-# MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_flexible"
-OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis" / "inner_value"
-DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis" / "inner_value" / "general_union_wordset_inner_value.json"
+MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_sliding_window" / "Year1978-2024_10_5"
+OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis" / "combine_domain"
+DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis" / "combine_domain" / "general_union_wordset_combine_domain.json"
 
 class DomainAnalyzer:
     def __init__(self, models):
@@ -78,7 +72,7 @@ class DomainAnalyzer:
         """直接读取现有的general union wordset"""
         try:
             # 直接读取现有的JSON文件
-            general_union_path = self.output_dir / "general_union_wordset_inner_value.json"
+            general_union_path = self.output_dir / "general_union_wordset_combine_domain.json"
             with open(general_union_path, 'r', encoding='utf-8') as f:
                 result = json.load(f)
             
@@ -237,7 +231,7 @@ class DomainAnalyzer:
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
         angles += angles[:1]
 
-        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+        fig, ax = plt.subplots(figsize=(12, 8), subplot_kw=dict(polar=True))
 
         for i, row in df.iterrows():
             data = row.drop('era').tolist()
@@ -256,15 +250,12 @@ class DomainAnalyzer:
     def plot_trend(self, df, path, title):
         """Generates and saves a trend plot."""
         plt.figure(figsize=(12, 7))
-        custom_xticklabels = ["1978-1996", "1997-2013", "2014-2024"]
         for column in df.columns[1:]:
-            sns.lineplot(data=df, x='era', y=column, marker='o', label=column, linewidth=4, markersize=10)
-        # plt.title(title)
-        plt.ylabel("维度得分（按时期归一化）", fontsize=22)
-        plt.xlabel("时期", fontsize=22)
-        plt.legend(fontsize=20)
-        plt.xticks(ticks=range(len(custom_xticklabels)), labels=custom_xticklabels, fontsize=20)
-        plt.yticks(fontsize=20)
+            sns.lineplot(data=df, x='era', y=column, marker='o', label=column)
+        plt.title(title)
+        plt.ylabel("Similarity")
+        plt.xlabel("Era")
+        plt.legend(title="Topic")
         plt.tight_layout()
         plt.savefig(path / "trend_chart.png", dpi=300)
         plt.close()
@@ -274,10 +265,35 @@ class DomainAnalyzer:
         # 转置数据，使era在x轴，topics在y轴
         df_transposed = df.set_index('era').T
         plt.figure(figsize=(10, 8))
-        sns.heatmap(df_transposed, annot=True, fmt=".3f", cmap="RdBu_r")
-        plt.title(title)
-        plt.xlabel("Era (时期)")
-        plt.ylabel("Topic (维度)")
+        # 根据era动态生成年份标签（兼容8个滑动窗口）
+        era_label_map = {
+            'era1': '1978-1988',
+            'era2': '1983-1993',
+            'era3': '1988-1998',
+            'era4': '1993-2003',
+            'era5': '1998-2008',
+            'era6': '2003-2013',
+            'era7': '2008-2018',
+            'era8': '2013-2024'
+        }
+        custom_xticklabels = [era_label_map.get(col, col) for col in df_transposed.columns]
+
+        ax = sns.heatmap(
+            df_transposed,
+            annot=True,
+            fmt=".3f",
+            # cmap="viridis",
+            xticklabels=custom_xticklabels,
+            # yticklabels=custom_yticklabels,
+            annot_kws={"fontsize": 20},  # 设置热力图数字的字体大小,
+            cmap="RdBu_r"
+        )
+        # 设置x轴和y轴label的字体大小
+        ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=20)
+        # plt.title(title)
+        plt.xlabel("时期", fontsize=24)
+        # plt.ylabel("类别", fontsize=24)
         plt.tight_layout()
         plt.savefig(path / "heatmap.png", dpi=300)
         plt.close()
@@ -345,9 +361,14 @@ def load_models():
     """Loads word vector models for each era."""
     models = {}
     model_files = {
-        'era1': 'Era1_1978-1996_wordvectors.kv',
-        'era2': 'Era2_1997-2013_wordvectors.kv',
-        'era3': 'Era3_2014-2024_wordvectors.kv'
+        'era1': 'Era1_1978-1988_wordvectors.kv',
+        'era2': 'Era2_1983-1993_wordvectors.kv',
+        'era3': 'Era3_1988-1998_wordvectors.kv',
+        'era4': 'Era4_1993-2003_wordvectors.kv',
+        'era5': 'Era5_1998-2008_wordvectors.kv',
+        'era6': 'Era6_2003-2013_wordvectors.kv',
+        'era7': 'Era7_2008-2018_wordvectors.kv',
+        'era8': 'Era8_2013-2024_wordvectors.kv'
     }
     for era, filename in model_files.items():
         try:
@@ -379,14 +400,22 @@ if __name__ == '__main__':
         print("📊 使用 General Union + Same Era 归一化")
         print("="*80)
         
-        # 混合模式: era1-法制, era2-[法制+法治], era3-法治
-        mixed_keywords = {
-            'era1': '法制',
-            'era2': ['法制', '法治'],
-            'era3': '法治'
+        # 8个时期关键词映射：
+        #  - 1978-1996：使用“法制”
+        #  - 1997-2013：使用混合[“法制”, “法治”]
+        #  - 2014-2024：使用“法治”
+        keywords_8_eras = {
+            'era1': '法制',                   # 1978-1988 → 78-96
+            'era2': '法制',                   # 1983-1993 → 78-96
+            'era3': ['法制', '法治'],         # 1988-1998 → 97-2013（混合）
+            'era4': ['法制', '法治'],         # 1993-2003 → 97-2013（混合）
+            'era5': ['法制', '法治'],         # 1998-2008 → 97-2013（混合）
+            'era6': ['法制', '法治'],         # 2003-2013 → 97-2013（混合）
+            'era7': '法治',                   # 2008-2018 → 14-24
+            'era8': '法治'                    # 2013-2024 → 14-24
         }
-        print("\n🔄 混合模式: era1-法制, era2-[法制+法治], era3-法治")
-        analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize='same_era')
+        print("\n🔄 使用8个时期（1978-1988 到 2013-2024）：78-96用‘法制’，97-2013用混合，14-24用‘法治’")
+        analyzer.run_analysis(keywords_8_eras, use_general_union=True, normalize='same_era')
         # print("\n🔄 混合模式: era1-党政建设, era2-[党政建设+党建政治], era3-党建政治")
         # analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize=None)
         

@@ -39,7 +39,10 @@ matplotlib.use('Agg')
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_flexible"
-OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis" / "domain"
+# MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_flexible" / "independent" / "top10000"
+# MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_flexible" / "independent" / "top10000"
+
+OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis" / "domain" 
 DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis" / "domain" / "general_union_wordset_domain.json"
 
 class DomainAnalyzer:
