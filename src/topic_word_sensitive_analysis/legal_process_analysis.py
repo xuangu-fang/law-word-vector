@@ -39,8 +39,8 @@ matplotlib.use('Agg')
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_sliding_window" / "Year1978-2024_10_5"
-OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis" / "legal_process"
-DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis" / "legal_process" / "topic_word_sets_legal_process.json"
+OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "legal_process"
+DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "legal_process" / "topic_word_sets_legal_process.json"
 
 class LegalProcessAnalyzer:
     def __init__(self, models):

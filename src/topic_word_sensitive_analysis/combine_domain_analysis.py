@@ -39,8 +39,8 @@ matplotlib.use('Agg')
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_sliding_window" / "Year1978-2024_10_5"
-OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis" / "combine_domain"
-DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis" / "combine_domain" / "general_union_wordset_combine_domain.json"
+OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "combine_domain"
+DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "combine_domain" / "general_union_wordset_combine_domain.json"
 
 class DomainAnalyzer:
     def __init__(self, models):
@@ -285,14 +285,14 @@ class DomainAnalyzer:
             # cmap="viridis",
             xticklabels=custom_xticklabels,
             # yticklabels=custom_yticklabels,
-            annot_kws={"fontsize": 20},  # 设置热力图数字的字体大小,
+            annot_kws={"fontsize": 10},  # 设置热力图数字的字体大小,
             cmap="RdBu_r"
         )
         # 设置x轴和y轴label的字体大小
         ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
         ax.set_yticklabels(ax.get_yticklabels(), fontsize=20)
         # plt.title(title)
-        plt.xlabel("时期", fontsize=24)
+        # plt.xlabel("时期", fontsize=24)
         # plt.ylabel("类别", fontsize=24)
         plt.tight_layout()
         plt.savefig(path / "heatmap.png", dpi=300)
