@@ -74,7 +74,7 @@ FORCE_CREATE_PERIOD_CORPORA = False # 若为True，即使时期语料已存在�
 
 # --- Word2Vec 微调参数 ---
 # VECTOR_SIZE 将从预训练模型动态获取
-WINDOW_SIZE = 50 # 上下文窗口大小
+WINDOW_SIZE = 10 # 上下文窗口大小
 MIN_COUNT = 5  # 词频阈值：在聚焦微调模式下，这也是聚焦词必须达到的最低频率
 WORKERS = os.cpu_count() - 1 if os.cpu_count() and os.cpu_count() > 1 else 1 # 使用的CPU核心数
 EPOCHS = 10        # 训练轮数

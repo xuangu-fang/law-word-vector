@@ -21,27 +21,34 @@
   - 三个时期：
     - 发展-约束-柱状图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/rule_by-of_law_index/combined/similarity_bar_chart_combined.png)
     - 语义动态指数（ 发展指数 减去 约束指数 ）趋势图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/rule_by-of_law_index/combined/semantic_dynamism_trend_chart_combined.png)
+
+
 4. 内在价值-4维度 分析：
   - 维度词表：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/inner_value/general_union_wordset_inner_value.json)
   - 热力图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/inner_value/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/heatmap.png)
   - 雷达图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/inner_value/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/radar_chart.png)
   - 趋势图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/inner_value/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/trend_chart.png)
+  - 稳健性检验（滑动窗口）：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis_sensitive/inner_value/keywords_era1-%E6%B3%95%E5%88%B6_era2-%E6%B3%95%E5%88%B6_era3-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era4-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era5-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era6-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era7-%E6%B3%95%E6%B2%BB_era8-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/trend_chart.png)
+
 5. 立法过程-4维度 分析：
   - 维度词表：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/legal_process/general_union_wordset_legal_process.json)
   - 热力图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/legal_process/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/heatmap.png)
   - 雷达图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/legal_process/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/radar_chart.png)
   - 趋势图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/legal_process/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/trend_chart.png)
+  - 稳健性检验（滑动窗口）：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis_sensitive/legal_process/keywords_era1-%E6%B3%95%E5%88%B6_era2-%E6%B3%95%E5%88%B6_era3-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era4-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era5-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era6-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era7-%E6%B3%95%E6%B2%BB_era8-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/heatmap.png)
 
-6. 法治领域-4维度 分析：
+6. 功能价值-4维度 分析：
   - 维度词表：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/domain/general_union_wordset_domain.json)
   - 热力图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/domain/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/heatmap.png)
   - 雷达图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/domain/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/radar_chart.png)
   - 趋势图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/domain/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/trend_chart.png)
+  - 稳健性检验（滑动窗口）：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis_sensitive/domain/keywords_era1-%E6%B3%95%E5%88%B6_era2-%E6%B3%95%E5%88%B6_era3-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era4-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era5-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era6-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era7-%E6%B3%95%E6%B2%BB_era8-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/trend_chart.png)
 
  7. 法治-内在-外在 合计8维度分析 
    - 维度词表：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/combine_domain/general_union_wordset_combine_domain.json)
   - 热力图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/combine_domain/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/heatmap.png)
   - 雷达图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/combine_domain/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/radar_chart.png)
   - 趋势图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/combine_domain/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/trend_chart.png)
+  - 稳健性检验（滑动窗口）：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis_sensitive/combine_domain/keywords_era1-%E6%B3%95%E5%88%B6_era2-%E6%B3%95%E5%88%B6_era3-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era4-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era5-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era6-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era7-%E6%B3%95%E6%B2%BB_era8-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/heatmap.png)
 
   注意，,4，5，6 和 7的结果，是基于 “法制-era1, 法制+法治-era2， 法治-era3” 的设定计算得到的
