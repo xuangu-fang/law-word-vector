@@ -265,10 +265,27 @@ class DomainAnalyzer:
         # 转置数据，使era在x轴，topics在y轴
         df_transposed = df.set_index('era').T
         plt.figure(figsize=(10, 8))
-        sns.heatmap(df_transposed, annot=True, fmt=".3f", cmap="RdBu_r")
-        plt.title(title)
-        plt.xlabel("Era (时期)")
-        plt.ylabel("Topic (维度)")
+        # 如果需要自定义x轴和y轴的ticks名称，可以通过设置xticklabels和yticklabels参数
+        # 例如，假设你想自定义x轴为["时期一", "时期二", "时期三"]，y轴为["维度A", "维度B", "维度C", ...]
+        custom_xticklabels = ["1978-1996", "1997-2013", "2014-2024"]  # 根据实际era数量自定义
+        # custom_yticklabels = [ "司法", "守法","执法","立法"]  # 根据实际topic数量自定义
+
+        ax = sns.heatmap(
+            df_transposed,
+            annot=True,
+            fmt=".3f",
+            # cmap="viridis",
+            xticklabels=custom_xticklabels,
+            # yticklabels=custom_yticklabels,
+            annot_kws={"fontsize": 20},  # 设置热力图数字的字体大小,
+            cmap="RdBu_r"
+        )
+        # 设置x轴和y轴label的字体大小
+        ax.set_xticklabels(ax.get_xticklabels(), fontsize=20)
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=20)
+        # plt.title(title)
+        plt.xlabel("时期", fontsize=24)
+        # plt.ylabel("类别", fontsize=24)
         plt.tight_layout()
         plt.savefig(path / "heatmap.png", dpi=300)
         plt.close()

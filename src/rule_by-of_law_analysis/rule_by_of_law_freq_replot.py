@@ -114,24 +114,24 @@ def replot_trends_from_csv(csv_file: Path, output_dir: Path, plot_moving_average
         plt.plot(fazhi_ma.index, fazhi_ma, color='#ff7f0e', linestyle='--', linewidth=3, label=f'法治 ({window_length}年滑动平均)')
         
         # 为滑动平均曲线添加数据点
-        for year, val in fazi_ma.items():
-            plt.annotate(f'{val:.1f}', (year, val),
-                       textcoords="offset points", xytext=(0,10), ha='center', fontsize=10, fontweight='bold', color='#1f77b4')
-        for year, val in fazhi_ma.items():
-            plt.annotate(f'{val:.1f}', (year, val),
-                       textcoords="offset points", xytext=(0,10), ha='center', fontsize=10, fontweight='bold', color='#ff7f0e')
+        # for year, val in fazi_ma.items():
+        #     plt.annotate(f'{val:.1f}', (year, val),
+        #                textcoords="offset points", xytext=(0,10), ha='center', fontsize=10, fontweight='bold', color='#1f77b4')
+        # for year, val in fazhi_ma.items():
+        #     plt.annotate(f'{val:.1f}', (year, val),
+        #                textcoords="offset points", xytext=(0,10), ha='center', fontsize=10, fontweight='bold', color='#ff7f0e')
 
 
     # 设置图表属性
-    plt.title('"法制"与"法治"词频年度变化趋势 (每百万词)', fontsize=20, fontweight='bold', pad=20)
+    plt.title('"法制"与"法治"词频年度变化趋势 (每百万词)', fontsize=30, fontweight='bold', pad=20)
     plt.xlabel('年份', fontsize=24)
     plt.ylabel('每百万词出现次数', fontsize=24)
-    plt.legend(fontsize=34, loc='upper left')
+    plt.legend(fontsize=30, loc='upper left')
     plt.grid(True, which='both', linestyle='--', linewidth=1.5)
 
     # 优化坐标轴
-    plt.xticks(years[::2], rotation=45, fontsize=12) # 每隔两年显示
-    plt.yticks(fontsize=12)
+    plt.xticks(years[::2], rotation=45, fontsize=20) # 每隔两年显示
+    plt.yticks(fontsize=20)
     
     # 原始数据的标签只在非滑动平均模式下显示，避免图表过于拥挤
     if not plot_moving_average:

@@ -250,12 +250,15 @@ class DomainAnalyzer:
     def plot_trend(self, df, path, title):
         """Generates and saves a trend plot."""
         plt.figure(figsize=(12, 7))
+        custom_xticklabels = ["1978-1996", "1997-2013", "2014-2024"]
         for column in df.columns[1:]:
-            sns.lineplot(data=df, x='era', y=column, marker='o', label=column)
-        plt.title(title)
-        plt.ylabel("Similarity")
-        plt.xlabel("Era")
-        plt.legend(title="Topic")
+            sns.lineplot(data=df, x='era', y=column, marker='o', label=column, linewidth=4, markersize=10)
+        # plt.title(title)
+        plt.ylabel("维度得分（按时期归一化）", fontsize=22)
+        plt.xlabel("时期", fontsize=22)
+        plt.legend(fontsize=20)
+        plt.xticks(ticks=range(len(custom_xticklabels)), labels=custom_xticklabels, fontsize=20)
+        plt.yticks(fontsize=20)
         plt.tight_layout()
         plt.savefig(path / "trend_chart.png", dpi=300)
         plt.close()
@@ -377,9 +380,9 @@ if __name__ == '__main__':
             'era3': '法治'
         }
         print("\n🔄 混合模式: era1-法制, era2-[法制+法治], era3-法治")
-        # analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize='same_era')
+        analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize='same_era')
         # print("\n🔄 混合模式: era1-党政建设, era2-[党政建设+党建政治], era3-党建政治")
-        analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize=None)
+        # analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize=None)
         
         print("\n🎉 法律领域分析完成！")
 

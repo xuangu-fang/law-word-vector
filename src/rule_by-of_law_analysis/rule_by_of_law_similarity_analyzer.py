@@ -88,8 +88,10 @@ def plot_similarity_trends(df: pd.DataFrame, word1: str, word2: str, output_dir:
         return
 
     plt.figure(figsize=(16, 10))
+    custom_x = [item.split('_')[1] for item in df['period']]
+    df['period'] = custom_x
     
-    plt.plot(df['period'], df['similarity'], marker='o', linestyle='-', markersize=10, linewidth=2.5)
+    plt.plot(custom_x, df['similarity'], marker='o', linestyle='-', markersize=15, linewidth=4)
     
     # 为每个数据点添加标签
     for i, row in df.iterrows():
@@ -99,14 +101,16 @@ def plot_similarity_trends(df: pd.DataFrame, word1: str, word2: str, output_dir:
                          textcoords="offset points",
                          xytext=(0,20),
                          ha='center',
-                         fontsize=14,
+                         fontsize=18,
                          fontweight='bold')
 
-    plt.title(f'"{word1}"与"{word2}"的余弦相似度变化趋势', fontsize=22, fontweight='bold', pad=20)
-    plt.xlabel('时期 / 模型', fontsize=16)
-    plt.ylabel('余弦相似度', fontsize=16)
-    plt.xticks(rotation=45, ha='right', fontsize=12)
-    plt.yticks(fontsize=12)
+    plt.title(f'"{word1}"与"{word2}"的语义相似度变化趋势', fontsize=30, fontweight='bold', pad=20)
+    plt.xlabel('时期', fontsize=24)
+    plt.ylabel('语义相似度', fontsize=24)
+    # plt.xticks(rotation=0, ha='right', fontsize=20)
+    plt.xticks( fontsize=20)
+
+    plt.yticks(fontsize=20)
     plt.grid(True, which='both', linestyle='--', linewidth=0.7)
     
     # 动态调整Y轴范围
