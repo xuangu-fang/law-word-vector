@@ -30,7 +30,7 @@ echo "Activating environment..."
 source activate $ENV_NAME
 
 # 安装PyTorch (特殊处理是因为需要从pytorch channel安装)
-conda install -y pytorch torchvision torchaudio -c pytorch
+# conda install -y pytorch torchvision torchaudio -c pytorch
 
 # 从requirements.txt安装其他依赖
 echo "Installing packages from requirements.txt..."
