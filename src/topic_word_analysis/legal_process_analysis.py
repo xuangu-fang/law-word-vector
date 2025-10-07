@@ -282,7 +282,7 @@ class LegalProcessAnalyzer:
             df_transposed,
             annot=True,
             fmt=".3f",
-            cmap="viridis",
+            cmap="Greys",  # 使用黑白灰色调，适合黑白打印
             xticklabels=custom_xticklabels,
             yticklabels=custom_yticklabels,
             annot_kws={"fontsize": 20}  # 设置热力图数字的字体大小
