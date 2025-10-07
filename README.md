@@ -57,8 +57,8 @@
 - 趋势图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/combine_domain/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/trend_chart.png)
 - 稳健性检验（滑动窗口）：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis_sensitive/combine_domain/keywords_era1-%E6%B3%95%E5%88%B6_era2-%E6%B3%95%E5%88%B6_era3-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era4-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era5-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era6-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era7-%E6%B3%95%E6%B2%BB_era8-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/heatmap.png)
 
+8. 最新- 治理与发展-权力制约-权利保障-正义理念 4维度分析
 
-8. 最新- 工具-战略-合法 3维度分析
 - 维度词表：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/law-function-new/general_union_wordset_law_function.json)
 - 热力图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/law-function-new/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/heatmap.png)
 - 雷达图：[link](https://github.com/xuangu-fang/law-word-vector/blob/master/output/topic_analysis/law-function-new/keywords_era1-%E6%B3%95%E5%88%B6_era2-%5B%E6%B3%95%E5%88%B6%2B%E6%B3%95%E6%B2%BB%5D_era3-%E6%B3%95%E6%B2%BB-general_union-normalize_same_era/radar_chart.png)
