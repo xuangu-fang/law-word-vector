@@ -1,0 +1,433 @@
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pathlib import Path
+from gensim.models import KeyedVectors
+import json
+from itertools import chain
+import warnings
+warnings.filterwarnings('ignore')
+
+# Setup plotting style and fonts
+plt.style.use('seaborn-v0_8-whitegrid')
+sns.set(font_scale=1.2)
+sns.set_style("whitegrid")
+plt.rcParams['font.sans-serif'] = ['SimHei']
+plt.rcParams['axes.unicode_minus'] = False
+
+# 设置matplotlib不显示图形，只保存
+import matplotlib
+matplotlib.use('Agg')
+
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "inner_actual_justice" 
+
+
+MODELS_DIR = PROJECT_ROOT / "models" / "fine_tuned_vectors_sliding_window" / "Year1978-2024_10_5"
+OUTPUT_DIR = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "inner_actual_justice"
+DATA_PATH = PROJECT_ROOT / "output" / "topic_analysis_sensitive" / "inner_actual_justice" / "general_union_wordset.json"
+
+class DomainAnalyzer:
+    def __init__(self, models):
+        if not models:
+            raise ValueError("No models provided.")
+        self.models = models
+        self.output_dir = OUTPUT_DIR
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        with open(DATA_PATH, 'r', encoding='utf-8') as f:
+            self.topic_word_sets = json.load(f)
+        
+        # 创建general union wordset (跨关键词+跨时期)
+        self.general_union_wordset = self._create_general_union_wordset()
+
+    def _get_word_set(self, keyword, era, use_union=False, use_general_union=False):
+        """Helper to retrieve word sets for a given keyword and era."""
+        if use_general_union:
+            # 跨关键词+跨时期的完全并集
+            return self.general_union_wordset
+        elif use_union:
+            # 仅跨时期的并集（针对特定关键词）
+            # 对于领域分析，直接返回现有词包
+            return self.topic_word_sets
+        
+        # 对于领域分析，直接返回现有词包
+        return self.topic_word_sets
+
+    def _create_general_union_wordset(self):
+        """直接读取现有的general union wordset"""
+        try:
+            # 直接读取现有的JSON文件
+            general_union_path = self.output_dir / "general_union_wordset.json"
+            with open(general_union_path, 'r', encoding='utf-8') as f:
+                result = json.load(f)
+            
+            print(f"General Union Wordset 统计 (从文件读取):")
+            for topic, words in result.items():
+                print(f"  {topic}: {len(words)} 个词")
+            
+            return result
+        except FileNotFoundError:
+            print("警告: 未找到general_union_wordset.json文件，将创建新的")
+            # 如果文件不存在，则创建新的
+            general_union = {}
+            
+            # 遍历所有关键词（法治、法制等）
+            for keyword, keyword_data in self.topic_word_sets.items():
+                # 遍历所有时期
+                for era, era_data in keyword_data.items():
+                    # 遍历所有topic
+                    for topic, words in era_data.items():
+                        if topic not in general_union:
+                            general_union[topic] = set()
+                        general_union[topic].update(words)
+            
+            # 转换为list并排序
+            result = {topic: sorted(list(word_set)) for topic, word_set in general_union.items()}
+            
+            print(f"General Union Wordset 统计 (新创建):")
+            for topic, words in result.items():
+                print(f"  {topic}: {len(words)} 个词")
+            
+            # 保存到JSON文件
+            with open(general_union_path, 'w', encoding='utf-8') as f:
+                json.dump(result, f, ensure_ascii=False, indent=2)
+            print(f"General Union Wordset 已保存到: {general_union_path}")
+            
+            return result
+
+    def calculate_similarities(self, era_keyword_map, use_union=False, use_general_union=False, normalize=None):
+        """
+        计算特定时期-特定维度的相似度
+        
+        对于每个era-topic组合：
+        - 使用该era的词向量模型
+        - 使用指定的关键词（法治/法制等）
+        - 与该era该topic的词包计算相似度
+        
+        Args:
+            era_keyword_map (dict): Maps eras to keywords (e.g., {'era1': '法制', 'era2': '法治'}).
+                                  Supports mixed mode: {'era2': ['法制', '法治']}.
+            use_union (bool): If True, use the union of word sets across all eras.
+            use_general_union (bool): If True, use complete union across keywords and eras.
+            normalize (str): Normalization method ('cross_era', 'same_era', None).
+
+        Returns:
+            pd.DataFrame: A DataFrame with similarity scores.
+        """
+        similarity_data = []
+        eras = sorted(era_keyword_map.keys())
+        
+        # 获取所有可能的topics（应该是：政治、经济、社会治理、生态、科技）
+        all_topics = sorted(list(self.topic_word_sets.keys()))
+        
+        print(f"发现的topics: {all_topics}")
+
+        for era in eras:
+            if era not in self.models:
+                print(f"警告: 没有找到era {era}的模型")
+                continue
+                
+            model = self.models[era]
+            keywords = era_keyword_map[era]
+            if isinstance(keywords, str):
+                keywords = [keywords]
+
+            era_similarities = {"era": era}
+            
+            for topic in all_topics:
+                topic_similarities = []
+                
+                for keyword in keywords:
+                    # 获取该era该keyword的topic词包
+                    word_set = self._get_word_set(keyword, era, use_union=use_union, use_general_union=use_general_union)
+                    
+                    topic_words = word_set.get(topic, [])
+                    
+                    if not topic_words:
+                        print(f"警告: {era}-{keyword}-{topic} 没有找到词包")
+                        continue
+                    
+                    # 计算该关键词与该topic词包的相似度
+                    if keyword not in model:
+                        print(f"警告: 关键词 '{keyword}' 不在 {era} 模型中")
+                        continue
+                    
+                    valid_sims = []
+                    for word in topic_words:
+                        if word in model and word != keyword:
+                            try:
+                                sim = model.similarity(keyword, word)
+                                valid_sims.append(sim)
+                            except KeyError:
+                                pass
+                    
+                    if valid_sims:
+                        avg_sim = np.mean(valid_sims)
+                        topic_similarities.append(avg_sim)
+                        print(f"{era}-{keyword}-{topic}: {len(valid_sims)}个有效词, 平均相似度={avg_sim:.3f}")
+
+                # 如果是混合模式（多个关键词），取平均
+                if topic_similarities:
+                    era_similarities[topic] = np.mean(topic_similarities)
+                else:
+                    era_similarities[topic] = 0.0
+            
+            similarity_data.append(era_similarities)
+
+        df = pd.DataFrame(similarity_data)
+        
+        if normalize and not df.empty:
+            if normalize == 'same_era':
+                # 同一era内的各topic相似度归一化（和为1）
+                df.iloc[:, 1:] = df.iloc[:, 1:].div(df.iloc[:, 1:].sum(axis=1), axis=0).fillna(0)
+            elif normalize == 'cross_era':
+                # 跨era标准化
+                for col in df.columns[1:]:
+                    col_data = df[col]
+                    if col_data.max() > col_data.min():
+                        df[col] = (col_data - col_data.min()) / (col_data.max() - col_data.min())
+                    else:
+                        df[col] = 0
+        
+        return df
+
+    def _create_output_path(self, settings):
+        """Creates a descriptive output path based on analysis settings."""
+        path_parts = []
+        for key, value in settings.items():
+            if isinstance(value, bool) and value:
+                path_parts.append(key)
+            elif isinstance(value, str) and value is not None:
+                path_parts.append(f"{key}_{value}")
+            elif isinstance(value, list):
+                str_value = '_'.join(map(str, value))
+                path_parts.append(f"{key}_{str_value}")
+        
+        setting_str = "-".join(filter(None, path_parts))
+        path = self.output_dir / setting_str
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def plot_radar(self, df, path, title):
+        """Generates and saves a radar plot."""
+        labels = df.columns[1:]
+        num_vars = len(labels)
+        
+        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+        angles += angles[:1]
+
+        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+
+        for i, row in df.iterrows():
+            data = row.drop('era').tolist()
+            data += data[:1]
+            ax.plot(angles, data, label=row['era'])
+            ax.fill(angles, data, alpha=0.25)
+
+        ax.set_yticklabels([])
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(labels)
+        ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+        plt.title(title)
+        plt.savefig(path / "radar_chart.png", dpi=300)
+        plt.close()
+
+    def plot_trend(self, df, path, title):
+        """Generates and saves a trend plot."""
+        plt.figure(figsize=(12, 7))
+        # 动态x轴标签，兼容8个滑动窗口
+        era_label_map = {
+            'era1': '1978-1988',
+            'era2': '1983-1993',
+            'era3': '1988-1998',
+            'era4': '1993-2003',
+            'era5': '1998-2008',
+            'era6': '2003-2013',
+            'era7': '2008-2018',
+            'era8': '2013-2024'
+        }
+        eras_in_df = list(df['era']) if 'era' in df.columns else []
+        custom_xticklabels = [era_label_map.get(e, e) for e in eras_in_df]
+        for column in df.columns[1:]:
+            sns.lineplot(data=df, x='era', y=column, marker='o', label=column, linewidth=4, markersize=10)
+        # plt.title(title)
+        plt.ylabel("维度得分（按时期归一化）", fontsize=22)
+        plt.xlabel("时期", fontsize=22)
+        plt.legend(fontsize=20)
+        plt.xticks(ticks=range(len(custom_xticklabels)), labels=custom_xticklabels, fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.tight_layout()
+        plt.savefig(path / "trend_chart.png", dpi=300)
+        plt.close()
+
+    def plot_heatmap(self, df, path, title):
+        """生成并保存热力图，X轴为年份区间"""
+        # 动态x轴标签，兼容8个滑动窗口
+        era_label_map = {
+            'era1': '1978-1988',
+            'era2': '1983-1993',
+            'era3': '1988-1998',
+            'era4': '1993-2003',
+            'era5': '1998-2008',
+            'era6': '2003-2013',
+            'era7': '2008-2018',
+            'era8': '2013-2024'
+        }
+        # 转置数据，使era在x轴，topics在y轴
+        df_transposed = df.set_index('era').T
+        # 获取原始era顺序
+        eras_in_df = list(df['era']) if 'era' in df.columns else []
+        custom_xticklabels = [era_label_map.get(e, e) for e in eras_in_df]
+        plt.figure(figsize=(10, 8))
+        ax = sns.heatmap(df_transposed, annot=True, fmt=".3f", cmap="Greys")
+        # plt.title(title)
+
+        ax.set_yticklabels(ax.get_yticklabels(), fontsize=25)
+        # plt.title(title)
+        plt.xlabel("时期", fontsize=24)
+        plt.ylabel("类别", fontsize=24)
+
+        # 设置x轴为自定义的年份区间标签
+        ax.set_xticks([i + 0.5 for i in range(len(custom_xticklabels))])
+        ax.set_xticklabels(custom_xticklabels, fontsize=16, rotation=45)
+        plt.yticks(fontsize=14)
+        plt.tight_layout()
+        plt.savefig(path / "heatmap.png", dpi=300)
+        plt.close()
+
+    def run_analysis(self, era_keyword_map, use_union=False, use_general_union=False, normalize=None):
+        """
+        运行完整的分析流程：计算相似度并生成所有图表
+        """
+        
+        print(f"\n{'='*50}")
+        print(f"开始分析: {era_keyword_map}")
+        print(f"Union模式: {use_union}, General Union模式: {use_general_union}, 归一化: {normalize}")
+        print(f"{'='*50}")
+        
+        keyword_strs = []
+        for era, keywords in sorted(era_keyword_map.items()):
+            if isinstance(keywords, list):
+                keyword_strs.append(f"{era}-[{'+'.join(keywords)}]")
+            else:
+                keyword_strs.append(f"{era}-{keywords}")
+        
+        settings = {
+            "keywords": keyword_strs,
+            "union": use_union,
+            "general_union": use_general_union,
+            "normalize": normalize
+        }
+        
+        output_path = self._create_output_path(settings)
+        print(f"输出路径: {output_path}")
+        
+        df = self.calculate_similarities(era_keyword_map, use_union, use_general_union, normalize)
+        
+        if df.empty:
+            print(f"无相似度数据: {settings}")
+            return
+        
+        print(f"\n相似度矩阵:")
+        print(df)
+
+        title_suffix = f" (Union: {use_union}, General Union: {use_general_union}, Normalize: {normalize})"
+        
+        try:
+            self.plot_radar(df, output_path, "Topic Similarity Radar Chart" + title_suffix)
+            print(f"雷达图已保存")
+        except Exception as e:
+            print(f"雷达图生成失败: {e}")
+            
+        try:
+            self.plot_trend(df, output_path, "Topic Similarity Trend Chart" + title_suffix)
+            print(f"趋势图已保存")
+        except Exception as e:
+            print(f"趋势图生成失败: {e}")
+            
+        try:
+            self.plot_heatmap(df, output_path, "Topic Similarity Heatmap" + title_suffix)
+            print(f"热力图已保存")
+        except Exception as e:
+            print(f"热力图生成失败: {e}")
+            
+        print(f"分析完成. 图表保存到: {output_path}")
+
+
+def load_models():
+    """Loads word vector models for each era."""
+    models = {}
+    model_files = {
+        'era1': 'Era1_1978-1988_wordvectors.kv',
+        'era2': 'Era2_1983-1993_wordvectors.kv',
+        'era3': 'Era3_1988-1998_wordvectors.kv',
+        'era4': 'Era4_1993-2003_wordvectors.kv',
+        'era5': 'Era5_1998-2008_wordvectors.kv',
+        'era6': 'Era6_2003-2013_wordvectors.kv',
+        'era7': 'Era7_2008-2018_wordvectors.kv',
+        'era8': 'Era8_2013-2024_wordvectors.kv'
+    }
+    for era, filename in model_files.items():
+        try:
+            models[era] = KeyedVectors.load(str(MODELS_DIR / filename), mmap='r')
+        except FileNotFoundError:
+            print(f"Warning: Model for {era} not found at {MODELS_DIR / filename}")
+    return models
+
+if __name__ == '__main__':
+    print("脚本开始执行...")
+    
+    try:
+        print("加载模型中...")
+        models = load_models()
+        
+        if not models:
+            print("错误: 没有加载到任何模型。退出。")
+            exit()
+        
+        print(f"成功加载了 {len(models)} 个模型: {list(models.keys())}")
+            
+        print("初始化分析器...")
+        analyzer = DomainAnalyzer(models)
+        
+        print("数据加载成功，开始分析...")
+
+        print("\n" + "="*80)
+        print("🏛️ 法律领域分析: 政治，经济，社会治理，生态，科技")
+        print("📊 使用 General Union + Same Era 归一化")
+        print("="*80)
+        
+        # 8个时期关键词映射：
+        #  - 1978-1996：使用“法制”
+        #  - 1997-2013：使用混合[“法制”, “法治”]
+        #  - 2014-2024：使用“法治”
+        keywords_8_eras = {
+            'era1': '法制',                   # 1978-1988 → 78-96
+            'era2': '法制',                   # 1983-1993 → 78-96
+            'era3': ['法制', '法治'],         # 1988-1998 → 97-2013（混合）
+            'era4': ['法制', '法治'],         # 1993-2003 → 97-2013（混合）
+            'era5': ['法制', '法治'],         # 1998-2008 → 97-2013（混合）
+            'era6': ['法制', '法治'],         # 2003-2013 → 97-2013（混合）
+            'era7': '法治',                   # 2008-2018 → 14-24
+            'era8': '法治'                    # 2013-2024 → 14-24
+        }
+        print("\n🔄 使用8个时期（1978-1988 到 2013-2024）：78-96用‘法制’，97-2013用混合，14-24用‘法治’")
+        analyzer.run_analysis(keywords_8_eras, use_general_union=True, normalize='same_era')
+        # print("\n🔄 混合模式: era1-党政建设, era2-[党政建设+党建政治], era3-党建政治")
+        # analyzer.run_analysis(mixed_keywords, use_general_union=True, normalize=None)
+        
+        print("\n🎉 法律领域分析完成！")
+
+    except Exception as e:
+        import traceback
+        print(f"发生错误: {e}")
+        print("详细错误信息:")
+        traceback.print_exc()
