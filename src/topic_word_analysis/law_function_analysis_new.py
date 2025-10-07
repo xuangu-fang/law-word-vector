@@ -264,7 +264,7 @@ class LawFunctionAnalyzer:
         # plt.title(title)
         plt.ylabel("维度得分（按时期归一化）", fontsize=22)
         plt.xlabel("时期", fontsize=22)
-        plt.legend(fontsize=20)
+        plt.legend(fontsize=20, loc='upper right',framealpha=0.5)
         plt.xticks(ticks=range(len(custom_xticklabels)), labels=custom_xticklabels, fontsize=20)
         plt.yticks(fontsize=20)
         plt.tight_layout()
